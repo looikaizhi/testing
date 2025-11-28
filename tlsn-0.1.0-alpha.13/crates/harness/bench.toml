@@ -1,0 +1,90 @@
+#### Latency ####
+
+[[group]]
+name = "latency"
+bandwidth = 1000
+
+[[bench]]
+group = "latency"
+protocol_latency = 10
+
+[[bench]]
+group = "latency"
+protocol_latency = 25
+
+[[bench]]
+group = "latency"
+protocol_latency = 50
+
+[[bench]]
+group = "latency"
+protocol_latency = 100
+
+[[bench]]
+group = "latency"
+protocol_latency = 200
+
+#### Bandwidth ####
+
+[[group]]
+name = "bandwidth"
+protocol_latency = 25
+
+[[bench]]
+group = "bandwidth"
+bandwidth = 10
+
+[[bench]]
+group = "bandwidth"
+bandwidth = 50
+
+[[bench]]
+group = "bandwidth"
+bandwidth = 100
+
+[[bench]]
+group = "bandwidth"
+bandwidth = 250
+
+[[bench]]
+group = "bandwidth"
+bandwidth = 1000
+
+#### Response size ####
+[[group]]
+name = "download_size"
+bandwidth = 200       
+protocol_latency = 10 
+upload-size = 2048   
+
+[[bench]]
+group = "download_size"
+download-size = 1024
+
+[[bench]]
+group = "download_size"
+download-size = 2048
+
+[[bench]]
+group = "download_size"
+download-size = 4096
+
+[[bench]]
+group = "download_size"
+download-size = 8192
+
+[[bench]]
+group = "download_size"
+download-size = 16384  
+
+[[bench]]
+group = "download_size"
+download-size = 32768
+
+[[bench]]
+group = "download_size"
+download-size = 65536
+
+[[bench]]
+group = "download_size"
+download-size = 131072
