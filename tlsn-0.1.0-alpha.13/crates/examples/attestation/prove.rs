@@ -287,7 +287,7 @@ async fn notarize(
         .map_err(|_| "notary is not receiving attestation request".to_string())?;
     
     println!("hello3");
-    prover.close().await?;
+    
     // Receive attestation from notary.
     let attestation = attestation_rx
         .await
