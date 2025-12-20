@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use harness_core::bench::Bench;
+use harness_core::bench::{Bench, VerifierMetrics};
 use tlsn::{
     config::{CertificateDer, ProtocolConfigValidator, RootCertStore},
     verifier::{Verifier, VerifierConfig, VerifyConfig},
@@ -9,7 +9,7 @@ use tlsn_server_fixture_certs::CA_CERT_DER;
 
 use crate::{IoProvider, bench::RECV_PADDING};
 
-pub async fn bench_verifier(provider: &IoProvider, config: &Bench) -> Result<()> {
+pub async fn bench_verifier(provider: &IoProvider, config: &Bench) -> Result<VerifierMetrics> {
     let mut builder = ProtocolConfigValidator::builder();
     builder
         .max_sent_data(config.upload_size)
@@ -27,9 +27,16 @@ pub async fn bench_verifier(provider: &IoProvider, config: &Bench) -> Result<()>
     );
 
     let verifier = verifier.setup(provider.provide_proto_io().await?).await?;
+    let time_start = web_time::Instant::now();
     let mut verifier = verifier.run().await?;
-    verifier.verify(&VerifyConfig::default()).await?;
+    let output = verifier.verify(&VerifyConfig::default()).await?;
     verifier.close().await?;
 
-    Ok(())
+    let time_zk_verify = output.verify_zk_time_ms;
+    let time_total = time_start.elapsed().as_millis();
+
+    Ok(VerifierMetrics {
+        time_zk_verify: time_zk_verify as u64,
+        time_verify: time_total as u64,
+    })
 }

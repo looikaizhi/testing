@@ -239,7 +239,7 @@ pub async fn main() -> Result<()> {
                 #[cfg(feature = "debug")]
                 debug!("Starting bench in group {:?}", config.group);
 
-                let (output, _) = tokio::try_join!(
+                let (output_p, output_v) = tokio::try_join!(
                     runner.exec_p.bench(BenchCmd {
                         config: config.clone(),
                         role: Role::Prover,
@@ -250,11 +250,15 @@ pub async fn main() -> Result<()> {
                     })
                 )?;
 
-                let BenchOutput::Prover { metrics } = output else {
+                let BenchOutput::Prover { metrics } = output_p else {
                     panic!("expected prover output");
                 };
 
-                let measurement = Measurement::new(config, metrics);
+                let BenchOutput::Verifier { metrics1 } = output_v else {
+                    panic!("expected verifier output");
+                };
+
+                let measurement = Measurement::new(config, metrics, metrics1);
 
                 writer.serialize(measurement)?;
                 writer.flush()?;

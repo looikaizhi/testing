@@ -1,9 +1,9 @@
 use std::fmt;
 
 // Maximum number of bytes that can be sent from prover to server.
-pub const MAX_SENT_DATA: usize = 1 << 12;
+pub const MAX_SENT_DATA: usize = 1 << 13;
 // Maximum number of bytes that can be received by prover from server.
-pub const MAX_RECV_DATA: usize = 1 << 14;
+pub const MAX_RECV_DATA: usize = 1 << 16;
 
 #[derive(clap::ValueEnum, Clone, Default, Debug)]
 pub enum ExampleType {

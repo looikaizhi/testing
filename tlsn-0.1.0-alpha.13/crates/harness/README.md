@@ -57,3 +57,14 @@ To add or modify benchmarks, see the [`bench.toml`](bench.toml) file.
 ## Browser
 
 The harness supports running tests and benches in the browser by setting the `--target browser` flag in the cli.
+
+``` bash
+cd crates/harness
+./build.sh
+
+sudo ./bin/runner --target native setup
+sudo ./bin/runner --target native bench
+
+sudo ./bin/runner --target browser setup
+sudo ./bin/runner --target browser bench
+```

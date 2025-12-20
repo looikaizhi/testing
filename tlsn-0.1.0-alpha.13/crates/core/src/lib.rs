@@ -240,6 +240,8 @@ pub struct VerifierOutput {
     pub encoder_secret: Option<EncoderSecret>,
     /// Transcript commitments.
     pub transcript_commitments: Vec<TranscriptCommitment>,
+    /// Verification time in milliseconds.
+    pub verify_zk_time_ms: u64,
 }
 
 opaque_debug::implement!(VerifierOutput);

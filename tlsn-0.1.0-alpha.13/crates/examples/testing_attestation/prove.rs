@@ -2,11 +2,9 @@
 // an HTTP request sent to a server fixture. The attestation and secrets are
 // saved to disk.
 
-use std::env;
-
 use clap::Parser;
 use http_body_util::Empty;
-use hyper::{body::Bytes, Request, StatusCode};
+use hyper::{Request, StatusCode, Uri, body::Bytes};
 use hyper_util::rt::TokioIo;
 use spansy::Spanned;
 use tokio::{
@@ -23,7 +21,7 @@ use tlsn::{
         Attestation, AttestationConfig, CryptoProvider, Secrets,
     },
     config::{
-        CertificateDer, PrivateKeyDer, ProtocolConfig, ProtocolConfigValidator, RootCertStore,
+        ProtocolConfig, ProtocolConfigValidator,
     },
     connection::{ConnectionInfo, HandshakeData, ServerName, TranscriptLength},
     prover::{state::Committed, ProveConfig, Prover, ProverConfig, ProverOutput, TlsConfig},
@@ -32,8 +30,6 @@ use tlsn::{
 };
 use tlsn_examples::ExampleType;
 use tlsn_formats::http::{DefaultHttpCommitter, HttpCommit, HttpTranscript};
-use tlsn_server_fixture::DEFAULT_FIXTURE_PORT;
-use tlsn_server_fixture_certs::{CA_CERT_DER, CLIENT_CERT_DER, CLIENT_KEY_DER, SERVER_DOMAIN};
 
 // Setting of the application server.
 const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
@@ -51,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
-    let (uri, extra_headers) = match args.example_type {
+    let (_, extra_headers) = match args.example_type {
         ExampleType::Json => ("/formats/json", vec![]),
         ExampleType::Html => ("/formats/html", vec![]),
         ExampleType::Authenticated => ("/protected", vec![("Authorization", "random_auth_token")]),
@@ -60,6 +56,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (notary_socket, prover_socket) = tokio::io::duplex(1 << 23);
     let (request_tx, request_rx) = oneshot::channel();
     let (attestation_tx, attestation_rx) = oneshot::channel();
+
+    let uri = "https://kunpeng.csdn.net/ad/template/3507501?positionId=986&queryWord=&articleId=0&adId=1076973";
+    let uri: Uri = uri.parse().map_err(|_| "url must be a valid https URL")?;
+    if uri.scheme_str() != Some("https"){
+        return Err("only https URLs are supported".into());
+    }
+
+    let host = uri.host()
+                .ok_or("url must include a host")?
+                .to_string();
+    let port = uri.port_u16().unwrap_or(443);
 
     // 异步执行tokio::spawn
     tokio::spawn(async move {
@@ -73,6 +80,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         request_tx,
         attestation_rx,
         uri,
+        host,
+        port,
         extra_headers,
         &args.example_type,
     )
@@ -85,35 +94,21 @@ async fn prover<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
     socket: S,
     req_tx: Sender<AttestationRequest>,
     resp_rx: Receiver<Attestation>,
-    uri: &str,
+    uri: Uri,
+    host: String,
+    port: u16,
     extra_headers: Vec<(&str, &str)>,
     example_type: &ExampleType,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let server_host: String = env::var("SERVER_HOST").unwrap_or("127.0.0.1".into());
-    let server_port: u16 = env::var("SERVER_PORT")
-        .map(|port| port.parse().expect("port should be valid integer"))
-        .unwrap_or(DEFAULT_FIXTURE_PORT);
-
-    // Create a root certificate store with the server-fixture's self-signed
-    // certificate. This is only required for offline testing with the
-    // server-fixture.
-    let mut tls_config_builder = TlsConfig::builder();
-    tls_config_builder
-        .root_store(RootCertStore {
-            roots: vec![CertificateDer(CA_CERT_DER.to_vec())],
-        })
-        // (Optional) Set up TLS client authentication if required by the server.
-        .client_auth((
-            vec![CertificateDer(CLIENT_CERT_DER.to_vec())],
-            PrivateKeyDer(CLIENT_KEY_DER.to_vec()),
-        ));
+    
+    let tls_config_builder = TlsConfig::builder();
 
     let tls_config = tls_config_builder.build().unwrap();
 
     // Set up protocol configuration for prover.
     let mut prover_config_builder = ProverConfig::builder();
     prover_config_builder
-        .server_name(ServerName::Dns(SERVER_DOMAIN.try_into().unwrap()))
+        .server_name(ServerName::Dns(host.as_str().try_into().unwrap()))
         .tls_config(tls_config)
         .protocol_config(
             ProtocolConfig::builder()
@@ -131,7 +126,7 @@ async fn prover<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
     let prover = Prover::new(prover_config).setup(socket.compat()).await?;
 
     // Open a TCP connection to the server.
-    let client_socket = tokio::net::TcpStream::connect((server_host, server_port)).await?;
+    let client_socket = tokio::net::TcpStream::connect((host.as_str(), port)).await?;
 
     // Bind the prover to the server connection.
     // The returned `mpc_tls_connection` is an MPC TLS connection to the server: all
@@ -152,8 +147,8 @@ async fn prover<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
 
     // Build a simple HTTP request with common headers.
     let request_builder = Request::builder()
-        .uri(uri)
-        .header("Host", SERVER_DOMAIN)
+        .uri(&uri)
+        .header("Host", &host.clone())
         .header("Accept", "*/*")
         // Using "identity" instructs the Server not to use compression for its HTTP response.
         // TLSNotary tooling does not support compression.
@@ -177,10 +172,12 @@ async fn prover<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
 
     // The prover task should be done now, so we can await it.
     let prover = prover_task.await??;
-
+    let result = std::str::from_utf8(prover.transcript().received()).expect("msg");
+    println!("{}", result);
     // Parse the HTTP transcript.
+/////////////////////////////////////////////////////////////////////////////////////
     let transcript = HttpTranscript::parse(prover.transcript())?;
-
+    println!("halo1");
     let body_content = &transcript.responses[0].body.as_ref().unwrap().content;
     let body = String::from_utf8_lossy(body_content.span().as_bytes());
 
@@ -218,7 +215,7 @@ async fn prover<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
 
     let request_config = builder.build()?;
 
-    let (attestation, secrets) = notarize(prover, &request_config, req_tx, resp_rx).await?;
+    let (attestation, secrets) = notarize(host, prover, &request_config, req_tx, resp_rx).await?;
 
     // Write the attestation to disk.
     let attestation_path = tlsn_examples::get_file_path(example_type, "attestation");
@@ -239,6 +236,7 @@ async fn prover<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
 }
 
 async fn notarize(
+    host: String,
     mut prover: Prover<Committed>,
     config: &RequestConfig,
     request_tx: Sender<AttestationRequest>,
@@ -267,7 +265,7 @@ async fn notarize(
     let mut builder = AttestationRequest::builder(config);
     println!("hello2");
     builder
-        .server_name(ServerName::Dns(SERVER_DOMAIN.try_into().unwrap()))
+        .server_name(ServerName::Dns(host.as_str().try_into().unwrap()))
         .handshake_data(HandshakeData {
             certs: tls_transcript
                 .server_cert_chain()
@@ -318,9 +316,6 @@ async fn notary<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
     // certificate. This is only required for offline testing with the
     // server-fixture.
     let verifier_config = VerifierConfig::builder()
-        .root_store(RootCertStore {
-            roots: vec![CertificateDer(CA_CERT_DER.to_vec())],
-        })
         .protocol_config_validator(config_validator)
         .build()
         .unwrap();
@@ -333,7 +328,6 @@ async fn notary<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
     println!("sad2");
     let VerifierOutput {
         transcript_commitments,
-        encoder_secret,
         ..
     } = verifier.verify(&VerifyConfig::default()).await?;
     println!("sad10");
@@ -392,10 +386,6 @@ async fn notary<S: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
         .server_ephemeral_key(tls_transcript.server_ephemeral_key().clone())
         .transcript_commitments(transcript_commitments);
 
-    if let Some(encoder_secret) =  encoder_secret{
-        builder.encoder_secret(encoder_secret);
-    }
-    
     let attestation = builder.build(&provider)?;
     println!("sad10");
     // Send attestation to prover.

@@ -169,7 +169,7 @@ pub struct Bench {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BenchOutput {
     Prover { metrics: ProverMetrics },
-    Verifier,
+    Verifier { metrics1: VerifierMetrics },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -178,6 +178,8 @@ pub struct ProverMetrics {
     pub time_preprocess: u64,
     /// TLS connection online time in milliseconds.
     pub time_online: u64,
+    /// ZK Proof Generation time in milliseconds.
+    pub time_generate_zk_proof: u64,
     /// Total runtime of the benchmark in milliseconds.
     pub time_total: u64,
     /// Total amount of data uploaded to the verifier in bytes during
@@ -198,6 +200,14 @@ pub struct ProverMetrics {
     pub downloaded_total: u64,
     /// Peak heap memory usage in bytes.
     pub heap_max_bytes: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerifierMetrics {
+    /// The runtime of spent in zk verification.
+    pub time_zk_verify: u64,
+    /// Total verify runtime of the benchmark in milliseconds.
+    pub time_verify: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -213,6 +223,8 @@ pub struct Measurement {
     pub time_preprocess: u64,
     /// TLS connection online time in milliseconds.
     pub time_online: u64,
+    /// ZK Proof Generation time in milliseconds.
+    pub time_generate_zk_proof: u64,
     /// Total runtime of the benchmark in milliseconds.
     pub time_total: u64,
     /// Total amount of data uploaded to the verifier in bytes during
@@ -233,10 +245,14 @@ pub struct Measurement {
     pub downloaded_total: u64,
     /// Peak heap memory usage in bytes.
     pub heap_max_bytes: Option<usize>,
+    /// The runtime of spent in zk verification.
+    pub time_zk_verify: u64,
+    /// Total verify runtime of the benchmark in milliseconds.
+    pub time_verify: u64,
 }
 
 impl Measurement {
-    pub fn new(config: Bench, metrics: ProverMetrics) -> Self {
+    pub fn new(config: Bench, metrics: ProverMetrics, metrics1: VerifierMetrics) -> Self {
         Self {
             group: config.group,
             name: config.name,
@@ -246,6 +262,7 @@ impl Measurement {
             download_size: config.download_size,
             defer_decryption: config.defer_decryption,
             time_preprocess: metrics.time_preprocess,
+            time_generate_zk_proof: metrics.time_generate_zk_proof,
             time_online: metrics.time_online,
             time_total: metrics.time_total,
             uploaded_preprocess: metrics.uploaded_preprocess,
@@ -255,6 +272,8 @@ impl Measurement {
             uploaded_total: metrics.uploaded_total,
             downloaded_total: metrics.downloaded_total,
             heap_max_bytes: metrics.heap_max_bytes,
+            time_zk_verify: metrics1.time_zk_verify,
+            time_verify: metrics1.time_verify,
         }
     }
 }

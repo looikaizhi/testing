@@ -259,7 +259,7 @@ impl Verifier<state::Committed> {
         let request = mux_fut
             .poll_with(ctx.io_mut().expect_next().map_err(VerifierError::from))
             .await?;
-
+        
         let output = mux_fut
             .poll_with(verify::verify(
                 ctx,
@@ -270,7 +270,7 @@ impl Verifier<state::Committed> {
                 request,
             ))
             .await?;
-
+        
         Ok(output)
     }
 

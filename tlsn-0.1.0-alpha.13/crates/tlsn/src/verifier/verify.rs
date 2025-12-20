@@ -37,6 +37,7 @@ pub(crate) async fn verify<T: Vm<Binary> + KeyStore + Send + Sync>(
         transcript_commit,
     } = request;
 
+    let verify_zk_time = web_time::Instant::now();
     let ciphertext_sent = collect_ciphertext(tls_transcript.sent());
     let ciphertext_recv = collect_ciphertext(tls_transcript.recv());
 
@@ -158,12 +159,14 @@ pub(crate) async fn verify<T: Vm<Binary> + KeyStore + Send + Sync>(
             transcript_commitments.push(TranscriptCommitment::Hash(commitment));
         }
     }
+    let verify_zk_time_ms = verify_zk_time.elapsed().as_millis() as u64;
 
-    Ok(VerifierOutput {
+    Ok(VerifierOutput { 
         server_name,
         transcript: has_reveal.then_some(transcript),
         encoder_secret,
         transcript_commitments,
+        verify_zk_time_ms,
     })
 }
 

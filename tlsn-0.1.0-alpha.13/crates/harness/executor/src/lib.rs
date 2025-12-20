@@ -63,11 +63,11 @@ impl Executor {
                         Ok(CmdOutput::Bench(BenchOutput::Prover { metrics }))
                     }
                     Role::Verifier => {
-                        bench_verifier(&provider, &config)
+                        let metrics1 = bench_verifier(&provider, &config)
                             .await
                             .map_err(|e| RpcError::new(format!("verifier bench failed: {e}")))?;
 
-                        Ok(CmdOutput::Bench(BenchOutput::Verifier))
+                        Ok(CmdOutput::Bench(BenchOutput::Verifier { metrics1 }))
                     }
                 }
             }

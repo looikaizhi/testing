@@ -88,19 +88,22 @@ pub async fn bench_prover(provider: &IoProvider, config: &Bench) -> Result<Prove
 
     builder
         .server_identity()
-        .reveal_sent(&(0..sent_len))?
-        .reveal_recv(&(0..recv_len))?;
+        .reveal_sent(&(0..sent_len-1))?
+        .reveal_recv(&(0..recv_len-1))?;
 
     let config = builder.build()?;
 
+    let time_generate_zk_proof_start = web_time::Instant::now();
     prover.prove(&config).await?;
     prover.close().await?;
 
     let time_total = time_start.elapsed().as_millis();
+    let time_generate_zk_proof = time_generate_zk_proof_start.elapsed().as_millis();
 
     Ok(ProverMetrics {
         time_preprocess: time_preprocess as u64,
         time_online: time_online as u64,
+        time_generate_zk_proof: time_generate_zk_proof as u64,
         time_total: time_total as u64,
         uploaded_preprocess,
         downloaded_preprocess,

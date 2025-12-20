@@ -230,7 +230,7 @@ impl Executor {
                 .await?;
                 page.execute(ReloadParams::builder().ignore_cache(true).build())
                     .await?;
-                page.wait_for_navigation().await?;
+                page.wait_for_load_event().await?;
                 page.bring_to_front().await?;
                 page.evaluate(format!(
                     r#"

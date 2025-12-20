@@ -183,7 +183,7 @@ async fn verifier<T: AsyncWrite + AsyncRead + Send + Sync + Unpin + 'static>(
     socket: T,
 ) -> PartialTranscript {
     // Set up Verifier.
-    let config_validator = ProtocolConfigValidator::builder()
+    let config_validator: ProtocolConfigValidator = ProtocolConfigValidator::builder()
         .max_sent_data(MAX_SENT_DATA)
         .max_recv_data(MAX_RECV_DATA)
         .build()

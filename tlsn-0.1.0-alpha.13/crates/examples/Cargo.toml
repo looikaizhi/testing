@@ -58,3 +58,16 @@ path = "attestation/present.rs"
 [[example]]
 name = "attestation_verify"
 path = "attestation/verify.rs"
+
+
+[[example]]
+name = "testing_attestation_prove"
+path = "testing_attestation/prove.rs"
+
+[[example]]
+name = "testing_attestation_present"
+path = "testing_attestation/present.rs"
+
+[[example]]
+name = "testing_attestation_verify"
+path = "testing_attestation/verify.rs"
