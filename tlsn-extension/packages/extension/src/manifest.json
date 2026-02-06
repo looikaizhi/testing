@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "TLSN Extension",
-  "description": "A Chrome extension for TLSN",
+  "version": "0.1.0.1400",
+  "name": "TLSNotary",
+  "description": "A Chrome extension for TLSNotary",
   "options_page": "options.html",
   "background": {
     "service_worker": "background.bundle.js"
@@ -14,22 +15,41 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
-      "js": ["contentScript.bundle.js"],
-      "css": ["content.styles.css"]
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "<all_urls>"
+      ],
+      "js": [
+        "contentScript.bundle.js"
+      ],
+      "css": [
+        "content.styles.css"
+      ]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.styles.css", "icon-128.png", "icon-34.png", "content.bundle.js", "*.wasm"],
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"]
+      "resources": [
+        "content.styles.css",
+        "icon-128.png",
+        "icon-34.png",
+        "content.bundle.js",
+        "*.wasm"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "<all_urls>"
+      ]
     }
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "permissions": [
     "offscreen",
     "webRequest",
-    "storage",
     "activeTab",
     "tabs",
     "windows",

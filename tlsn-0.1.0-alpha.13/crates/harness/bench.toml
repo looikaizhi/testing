@@ -50,3 +50,41 @@ bandwidth = 250
 group = "bandwidth"
 bandwidth = 1000
 
+#### Response size ####
+[[group]]
+name = "download_size"
+bandwidth = 200       
+protocol_latency = 10 
+upload-size = 2048   
+
+[[bench]]
+group = "download_size"
+download-size = 1024
+
+[[bench]]
+group = "download_size"
+download-size = 2048
+
+[[bench]]
+group = "download_size"
+download-size = 4096
+
+[[bench]]
+group = "download_size"
+download-size = 8192
+
+[[bench]]
+group = "download_size"
+download-size = 16384  
+
+[[bench]]
+group = "download_size"
+download-size = 32768
+
+[[bench]]
+group = "download_size"
+download-size = 65536
+
+[[bench]]
+group = "download_size"
+download-size = 131072

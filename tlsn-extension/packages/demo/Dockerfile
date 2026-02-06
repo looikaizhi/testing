@@ -1,17 +1,48 @@
-# Build stage
-FROM rust:latest AS builder
+# Build stage for demo
+# Context: packages/
+FROM node:20-alpine AS demo-builder
 
 # Accept build arguments with defaults
-ARG VERIFIER_HOST=localhost:7047
-ARG SSL=false
+ARG VITE_VERIFIER_HOST=localhost:7047
+ARG VITE_SSL=false
+ARG GIT_HASH=local
 
 WORKDIR /app
-COPY index.html *.ico *.js *.sh /app/
 
-# Pass build args as environment variables to generate.sh
-RUN VERIFIER_HOST="${VERIFIER_HOST}" SSL="${SSL}" ./generate.sh
+# Copy demo package files and install dependencies
+COPY demo/package.json ./
+RUN npm install
+
+# Copy demo source files
+COPY demo/ .
+
+# Build with environment variables
+ENV VITE_VERIFIER_HOST=${VITE_VERIFIER_HOST}
+ENV VITE_SSL=${VITE_SSL}
+ENV GIT_HASH=${GIT_HASH}
+RUN npm run build
+
+# Build stage for tutorial
+FROM node:20-alpine AS tutorial-builder
+
+WORKDIR /app
+
+# Copy tutorial package files and install dependencies
+COPY tutorial/package.json ./
+RUN npm install
+
+# Copy tutorial source files
+COPY tutorial/ .
+
+# Build tutorial with /tutorial/ base path
+ENV VITE_BASE_PATH=/tutorial/
+RUN npm run build
 
 # Runtime stage
 FROM nginx:alpine
 
-COPY --from=builder /app/generated /usr/share/nginx/html
+# Copy demo build output
+COPY --from=demo-builder /app/dist /usr/share/nginx/html
+
+# Copy tutorial build output
+COPY --from=tutorial-builder /app/dist /usr/share/nginx/html/tutorial/

@@ -18,6 +18,7 @@ import {
   WindowMessage,
   Handler,
   PluginConfig,
+  RequestPermission,
 } from './types';
 import deepEqual from 'fast-deep-equal';
 
@@ -206,6 +207,9 @@ function makeSetState(
     stateStore[key] = value;
     if (deepEqual(stateStore, executionContext.stateStore)) {
       return;
+    }
+    if (!executionContext?.windowId){
+      return
     }
 
     eventEmitter.emit({
@@ -517,7 +521,11 @@ const done = env.done;
 ${code};
 `);
 
-    const { config } = exportedCode;
+    const moduleExports =
+      exportedCode?.default && typeof exportedCode.default === 'object'
+        ? exportedCode.default
+        : exportedCode;
+    const { config } = moduleExports;
     return config;
   }
 
@@ -594,6 +602,7 @@ ${code};
         if (context?.windowId) {
           onCloseWindow(context.windowId);
         }
+        logger.warn('[Host] done() called, disposing context:', uuid);
         executionContextRegistry.delete(uuid);
         doneResolve(args);
       },
@@ -614,7 +623,11 @@ const done = env.done;
 ${code};
 `);
 
-    const { main: mainFn, ...args } = exportedCode;
+    const moduleExports =
+      exportedCode?.default && typeof exportedCode.default === 'object'
+        ? exportedCode.default
+        : exportedCode;
+    const { main: mainFn, ...args } = moduleExports;
 
     if (typeof mainFn !== 'function') {
       throw new Error('Main function not found');
@@ -639,6 +652,7 @@ ${code};
         });
 
         let result = mainFn();
+
         const lastSelectors = executionContextRegistry.get(uuid)?.context['main']?.selectors;
         const selectors = context['main']?.selectors;
         const lastStateStore = executionContextRegistry.get(uuid)?.stateStore;
@@ -684,11 +698,17 @@ ${code};
             },
           );
         }
+        // logger.info('Main function success',{
+        //   uuid, currentContext: executionContextRegistry.get(uuid)?.context,
+        // });
 
         return result;
       } catch (error) {
-        logger.error('Main function error:', error);
+        logger.error('[Host] Main function error, disposing sandbox:', error,{
+          uuid, currentContext: executionContextRegistry.get(uuid)?.context,
+        });
         sandbox.dispose();
+        
         return null;
       }
     };
@@ -704,6 +724,7 @@ ${code};
       callbacks: callbacks,
       stateStore: {},
     });
+    logger.warn('[Host] context created', { uuid });
 
     main();
 
@@ -738,8 +759,11 @@ async function waitForWindow(callback: () => Promise<any>, retry = 0): Promise<a
 
 /**
  * Extract plugin configuration from plugin code without executing it.
- * Uses regex-based parsing to extract the config object from the source code
- * without running any JavaScript.
+ * Uses regex-based parsing to extract the config object from the source code.
+ *
+ * Note: This regex-based approach cannot extract complex fields like arrays
+ * (requests, urls). For full config extraction including permissions, use
+ * Host.getPluginConfig() which uses the QuickJS sandbox.
  *
  * @param code - The plugin source code
  * @returns The plugin config object, or null if extraction fails
@@ -792,7 +816,7 @@ export async function extractConfig(code: string): Promise<PluginConfig | null> 
 }
 
 // Export types
-export type { PluginConfig };
+export type { PluginConfig, RequestPermission };
 
 // Re-export LogLevel for consumers
 export { LogLevel } from '@tlsn/common';

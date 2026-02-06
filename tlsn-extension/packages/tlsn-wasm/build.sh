@@ -5,7 +5,7 @@ set -e # Exit on error
 # Set the directory to the location of the script
 cd "$(dirname "$0")"
 
-VERSION=${1:-origin/dev} # use `dev` branch if no version is set
+VERSION=${1:-origin/main} # use `main` branch if no version is set
 NO_LOGGING=${2}
 
 TARGET_DIR="../../tlsn-wasm-pkg/"
@@ -33,10 +33,10 @@ fi
 git checkout "${VERSION}" --force
 git reset --hard
 
+cd crates/wasm
 # Apply no-logging modification if requested
 if [ "$NO_LOGGING" = "--no-logging" ]; then
     echo "Applying no-logging configuration..."
-    cd crates/wasm
     
     # Add it to the wasm32 target section (after the section header)
     sed -i.bak '/^\[target\.\x27cfg(target_arch = "wasm32")\x27\.dependencies\]$/a\
@@ -45,11 +45,8 @@ tracing = { workspace = true, features = ["release_max_level_off"] }' Cargo.toml
     
     # Clean up backup file
     rm Cargo.toml.bak
-    
-    cd ../..
 fi
 
-cd crates/wasm
 cargo update
 ./build.sh
 cd ../../

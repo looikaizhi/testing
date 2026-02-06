@@ -9,14 +9,17 @@ services:
       - "7047:7047"
     environment:
       - RUST_LOG=info
+      - GIT_HASH=${GIT_HASH:-dev}
     restart: unless-stopped
 
   demo-static:
     build:
-      context: .
+      context: ..
+      dockerfile: demo/Dockerfile
       args:
-        VERIFIER_HOST: ${VERIFIER_HOST:-localhost:7047}
-        SSL: ${SSL:-false}
+        VITE_VERIFIER_HOST: ${VITE_VERIFIER_HOST:-localhost:7047}
+        VITE_SSL: ${VITE_SSL:-false}
+        GIT_HASH: ${GIT_HASH:-dev}
     restart: unless-stopped
 
   nginx:

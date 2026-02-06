@@ -17,7 +17,7 @@ export type LogLevelName = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 /**
  * Default log level (WARN - shows warnings and errors only)
  */
-export const DEFAULT_LOG_LEVEL = LogLevel.WARN;
+export const DEFAULT_LOG_LEVEL = LogLevel.DEBUG;
 
 /**
  * Convert LogLevel enum to string name
