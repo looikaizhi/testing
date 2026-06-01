@@ -1,5 +1,0 @@
-!noir/target/
-# Ignore everything inside noir/target
-noir/target/*
-# Except noir.json
-!noir/target/noir.json
