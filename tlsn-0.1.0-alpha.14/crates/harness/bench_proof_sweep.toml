@@ -1,0 +1,77 @@
+#### Proof Disclosure Sweep Benchmark ####
+#
+# Measures how proof metrics change as the revealed percentage varies.
+#
+# Fixed parameters:
+#   - Bandwidth: 100 Mbps
+#   - Latency: 25ms
+#   - Upload: 10KB
+#   - Download: 20KB
+#
+# Variable:
+#   - reveal-recv-percent: 10% .. 100%
+#     (applied symmetrically to both sent and received transcript disclosure)
+#
+# Note:
+#   - 100% does NOT reveal full transcript in bench mode.
+#     The prover still keeps at least 1 byte hidden to avoid reveal-all
+#     optimization.
+
+[[group]]
+name = "proof_sweep"
+bandwidth = 100
+protocol_latency = 25
+upload-size = 1024
+download-size = 2048
+defer-decryption = true
+reveal-all = false
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_10pct"
+reveal-recv-percent = 10
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_20pct"
+reveal-recv-percent = 20
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_30pct"
+reveal-recv-percent = 30
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_40pct"
+reveal-recv-percent = 40
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_50pct"
+reveal-recv-percent = 50
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_60pct"
+reveal-recv-percent = 60
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_70pct"
+reveal-recv-percent = 70
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_80pct"
+reveal-recv-percent = 80
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_90pct"
+reveal-recv-percent = 90
+
+[[bench]]
+group = "proof_sweep"
+name = "reveal_100pct"
+reveal-recv-percent = 100

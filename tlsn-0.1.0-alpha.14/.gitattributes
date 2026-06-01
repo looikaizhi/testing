@@ -1,0 +1,8 @@
+# Normalize line endings to LF so diffs against upstream are not polluted
+# by CRLF/LF differences on Windows checkouts.
+* text=auto eol=lf
+
+# Treat known binary/asset types as binary (never normalize or diff as text).
+*.png   binary
+*.wasm  binary
+*.lock  -text
