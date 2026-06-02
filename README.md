@@ -48,10 +48,6 @@
 
 构建于 [tlsnotary/tlsn-extension](https://github.com/tlsnotary/tlsn-extension)（TLSNotary / PSE 团队）之上，C2C 协议层为本文贡献。详见 [归属与许可](docs/zh/ATTRIBUTION.md)。
 
-### 引用
-
-雷凯智（LOOI KAI ZHI）.《基于 zkTLS 的半去中心化的 C2C 兑换协议设计与实现》. 北京理工大学计算机学院硕士学位论文, 2026. 完整信息与 BibTeX 见 [thesis.md](docs/zh/thesis.md)。
-
 ---
 
 ## English
