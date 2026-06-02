@@ -21,6 +21,7 @@
 
 **Keywords**：zkTLS; semi-decentralized protocol; C2C asset exchange; off-chain payment proof; smart contract escrow
 
+> [!NOTE]
 > 来源：论文模板 `main.tex:31-134`、`chapters/abstract.tex`。
 
 ---
@@ -35,6 +36,7 @@
 
 原型结果：单笔完整换汇在 Arbitrum One 上链上成本约 \$0.13；端到端时延理想环境下支付宝 5.94 s、Wise 9.74 s，宽带环境下 17.44 s、24.02 s。
 
+> [!TIP]
 > 完整中英文摘要见 `chapters/abstract.tex`。代码实现对论文中的机制做了更精确的落地，细节以本文档与源码为准。
 
 ---
@@ -59,4 +61,13 @@
 }
 ```
 
-> 注：论文 PDF（`main.pdf`）与 LaTeX 源位于论文模板目录（仓库外），未随本开源仓库分发。
+> [!NOTE]
+> 论文 PDF（`main.pdf`）与 LaTeX 源位于论文模板目录（仓库外），未随本开源仓库分发。
+
+---
+
+<div align="center">
+
+🏠 [文档导航](README.md) · 🧠 [深度轨总览](deep-dive/01-overview.md) · 🙏 [归属与许可](ATTRIBUTION.md)
+
+</div>

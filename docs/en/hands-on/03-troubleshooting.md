@@ -1,8 +1,12 @@
 # Troubleshooting Quick Reference
 
-> **Purpose**: reduce friction — common errors, debugging tips, FAQ.
-> **Audience**: hands-on track.
-> Custom-error source: [`C2CTypes.sol:108-194`](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194).
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: reduce friction — common errors, debugging tips, FAQ.
+> - **Audience**: hands-on track.
+> - **Custom-error source**: [`C2CTypes.sol:108-194`](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194).
+
+**Contents**: [Environment & startup](#1-environment--startup) · [Revert error reference](#2-contract-revert-custom-error-reference) · [Proof generation](#3-proof-generation-phase) · [Gas & on-chain](#4-gas--on-chain) · [FAQ](#5-faq)
 
 ---
 
@@ -46,7 +50,8 @@ The most common custom errors during order placement / proof submission (the wal
 | `UserBlacklisted` / `UserTemporarilyFrozen` | Risk-control blacklist / within the temporary freeze period |
 | `ContractPaused` | The contract is paused by the admin |
 
-For the full list, see [C2CTypes.sol:108-194](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194).
+> [!TIP]
+> For the full list, see [C2CTypes.sol:108-194](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194).
 
 ---
 
@@ -90,4 +95,13 @@ docker run -it --rm -p 55688:80 novnc/websockify 80 api.x.com:443
 
 ---
 
+> [!TIP]
 > Still stuck? Go through the success criteria in [01-quickstart.md](01-quickstart.md) one by one; to understand the mechanisms, see [deep-dive/](../deep-dive/01-overview.md).
+
+---
+
+<div align="center">
+
+◀ Prev [02 · Demo walkthrough](02-demo-walkthrough.md) · 🏠 [Docs home](../README.md) · 🧠 [Deep-dive](../deep-dive/01-overview.md)
+
+</div>

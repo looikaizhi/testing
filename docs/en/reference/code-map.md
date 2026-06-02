@@ -1,8 +1,10 @@
 # Source Map: Thesis ↔ Code
 
-> **Purpose**: helps you "understand the thesis work directly through the source." It is the **skeleton** of the whole doc set — every other page references the package responsibilities and the "thesis concept ↔ source location" map here.
-> **Audience**: shared by both the hands-on and deep-dive tracks. Start with the [overview](#1-monorepo-overview) to build a mental map, then use the [mapping table](#3-thesis-concept--source-location-map) to navigate.
-> All facts follow the actual source; code references are written as `file:line` and are clickable.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: helps you "understand the thesis work directly through the source." It is the **skeleton** of the whole doc set — every other page references the package responsibilities and the "thesis concept ↔ source location" map here.
+> - **Audience**: shared by both the hands-on and deep-dive tracks. Start with the [overview](#1-monorepo-overview) to build a mental map, then use the [mapping table](#3-thesis-concept--source-location-map) to navigate.
+> - All facts follow the actual source; code references are written as `file:line` and are clickable.
 
 ---
 
@@ -10,31 +12,30 @@
 
 The code lives in [`tlsn-extension/`](../../../tlsn-extension/), an npm-workspaces multi-package repo. The thesis system has **two trust domains** and **four layers**; the table below maps the thesis layers to code packages:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Decentralized domain (on-chain, deterministic execution)        │
-│    packages/contracts  ── escrow, order FSM, proof verification, │
-│                           risk control, bond vault               │
-├─────────────────────────────────────────────────────────────────┤
-│  Constrained centralized domain (off-chain, bound by crypto)     │
-│    packages/verifier   ── MPC-TLS verify + accountCheck +        │
-│                           signing + Webhook                      │
-├─────────────────────────────────────────────────────────────────┤
-│  Proof-generation layer (user side)                              │
-│    packages/extension  ── browser extension (MPC-TLS proof gen)  │
-│    packages/plugin-sdk ── QuickJS-sandboxed plugin runtime + HTTP│
-│    packages/tlsn-wasm  ── WASM bindings for TLSNotary proofs      │
-├─────────────────────────────────────────────────────────────────┤
-│  Application & ops layer                                         │
-│    packages/web        ── trading dApp (Next.js frontend)        │
-│    packages/keeper     ── expired-order cleanup daemon (off-chain,│
-│                           no privilege)                          │
-│    packages/demo       ── Docker demo + example plugins          │
-│    packages/tutorial   ── plugin-development tutorial            │
-│    packages/common     ── shared utilities (logging)             │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph L1["🟢 Decentralized domain · on-chain, deterministic"]
+        contracts["packages/contracts<br/>escrow · order FSM · proof verification · risk · bond vault"]
+    end
+    subgraph L2["🟡 Constrained centralized domain · off-chain"]
+        verifier["packages/verifier<br/>MPC-TLS verify + accountCheck + signing + Webhook"]
+    end
+    subgraph L3["Proof-generation layer · user side"]
+        ext["packages/extension<br/>browser extension (MPC-TLS proof gen)"]
+        sdk["packages/plugin-sdk<br/>QuickJS-sandboxed plugin runtime + HTTP parsing"]
+        wasm["packages/tlsn-wasm<br/>WASM bindings for TLSNotary proofs"]
+    end
+    subgraph L4["Application & ops layer"]
+        web["packages/web · trading dApp (Next.js)"]
+        keeper["packages/keeper · expired-order cleanup daemon (no privilege)"]
+        demo["packages/demo · Docker demo + example plugins"]
+        tut["packages/tutorial · plugin-development tutorial"]
+        common["packages/common · shared logging utilities"]
+    end
+    L1 --- L2 --- L3 --- L4
 ```
 
+> [!NOTE]
 > The definitions of "decentralized domain / constrained centralized domain" are in [glossary.md](glossary.md) and [deep-dive/01-overview.md](../deep-dive/01-overview.md); why it is split this way is in [deep-dive/03-threat-model.md](../deep-dive/03-threat-model.md).
 
 ---
@@ -54,6 +55,7 @@ The code lives in [`tlsn-extension/`](../../../tlsn-extension/), an npm-workspac
 | [`tutorial`](../../../tlsn-extension/packages/tutorial/) | TypeScript | Plugin-development tutorial | ch5 | — |
 | [`common`](../../../tlsn-extension/packages/common/) | TypeScript | Shared logging utilities | — | — |
 
+> [!NOTE]
 > 📁 `web/src/components/` is organized into subdirectories: `admin/ binding/ dashboard/ merchant/ orders/ p2p/ proof/ shared/ trade/ ui/ layout/` (the frontend business flows are arranged this way).
 
 ### Contract layer file list (`packages/contracts/contracts/`)
@@ -76,6 +78,7 @@ The code lives in [`tlsn-extension/`](../../../tlsn-extension/), an npm-workspac
 
 ## 3. Thesis concept ↔ source location map
 
+> [!IMPORTANT]
 > The core of this page: thesis concept → exact code implementation location.
 
 ### 3.1 The two innovations
@@ -189,4 +192,13 @@ To understand the protocol fastest, read the source in this order:
 | Modify contracts / add a payment platform | [contracts.md](contracts.md) + [verifier-plugin.md](verifier-plugin.md) |
 | Re-check the experimental data | [deep-dive/06-evaluation.md](../deep-dive/06-evaluation.md) |
 
+> [!TIP]
 > Stuck on a term? See [glossary.md](glossary.md).
+
+---
+
+<div align="center">
+
+🏠 [Docs home](../README.md) · 🚀 [Quickstart](../hands-on/01-quickstart.md) · 🧠 [Deep-dive](../deep-dive/01-overview.md) · 📚 [Contracts](contracts.md)
+
+</div>

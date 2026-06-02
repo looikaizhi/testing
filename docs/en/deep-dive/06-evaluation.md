@@ -1,9 +1,13 @@
 # Evaluation: Measured Data
 
-> **Purpose**: convince with measured data — contract correctness, on-chain gas economics, TLSNotary performance, end-to-end latency.
-> **Audience**: deep-dive track / reviewers.
-> **Data sources**: contract tests [`contracts/TEST_RESULT.md`](../../../tlsn-extension/packages/contracts/TEST_RESULT.md); experimental data [`data_analysis/`](../../../data_analysis/) (`*.csv` sources, `*.svg` charts).
-> **Recomputation principle**: every number here is recomputed live from the source data (CSV / test output / contract constants).
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: convince with measured data — contract correctness, on-chain gas economics, TLSNotary performance, end-to-end latency.
+> - **Audience**: deep-dive track / reviewers.
+> - **Data sources**: contract tests [`contracts/TEST_RESULT.md`](../../../tlsn-extension/packages/contracts/TEST_RESULT.md); experimental data [`data_analysis/`](../../../data_analysis/) (`*.csv` sources, `*.svg` charts).
+> - **Recomputation principle**: every number here is recomputed live from the source data (CSV / test output / contract constants).
+
+**Contents**: [Contract correctness](#1-contract-functional-correctness) · [Gas & economics](#2-on-chain-gas--economics) · [TLSNotary performance](#3-tlsnotary-protocol-performance) · [End-to-end latency](#4-end-to-end-business-latency) · [Limitations](#5-limitations-thesis-ch65)
 
 ---
 
@@ -25,7 +29,8 @@
 
 Cases are organized as `FLOW` (positive) / `ERR` (error path) / `ATT` (attack vector) / `TAMPER` (timing tamper), covering state transitions, asset conservation, and the five-step cryptographic verification pipeline (order-binding-hash substitution, session replay, signature forgery, chain-ID substitution, and amount tampering all revert as expected).
 
-> 💡 The test suite keeps growing (contract-logic iterations add cases); the live figure follows the local `hardhat test` output. The TLSN-verifier suite includes a "real-verifier 5-item signature format passes, legacy 4-item rejected by `UntrustedVerifier`" case, confirming that the current signature digest is 5 fields (incl. `orderBindingHash`, `policyVersionHash`).
+> [!TIP]
+> The test suite keeps growing (contract-logic iterations add cases); the live figure follows the local `hardhat test` output. The TLSN-verifier suite includes a "real-verifier 5-item signature format passes, legacy 4-item rejected by `UntrustedVerifier`" case, confirming that the current signature digest is 5 fields (incl. `orderBindingHash`, `policyVersionHash`).
 
 ---
 
@@ -80,7 +85,8 @@ Recompute the three tiers (682,206 × Gas Price × 1e-9 × \$3000):
 
 For a typical exchange size of 100–10,000 USDT, the fee is 0.001%–0.13% at the mean tier, far below mainstream centralized-exchange withdrawal fees (~1–3 USDT).
 
-> Note: the above is execution gas, excluding the L1 data fee. Post-Dencun (EIP-4844), the typical Arbitrum L1 data fee is \$0.001–\$0.02, a negligible share.
+> [!NOTE]
+> The above is execution gas, excluding the L1 data fee. Post-Dencun (EIP-4844), the typical Arbitrum L1 data fee is \$0.001–\$0.02, a negligible share.
 
 ---
 
@@ -99,6 +105,7 @@ Four-dimensional parameter sensitivity (10 runs averaged per configuration):
 | **Response size** (1–50 KB) | Native near-linear; the browser rises non-linearly after 5–10 KB (23.5s at 50 KB, 2.33× native). This system's API responses are 2–5 KB, in the flat region below the knee | [response_size.svg](../../assets/charts/response_size.svg) |
 | **Disclosure ratio** (10%–100%) | Smallest effect (~10%–11% increase across the range). This system's disclosure is 20%–35%, in the completely flat region | [proof_reveal.svg](../../assets/charts/proof_reveal.svg) |
 
+> [!TIP]
 > Key insight: **bandwidth is the primary bottleneck**, and disclosure ratio has the smallest effect — meaning selective disclosure (privacy protection) adds almost no latency cost.
 
 ---
@@ -114,6 +121,8 @@ A single physical machine (i7-11800H), with the verifier server on WSL2 Linux an
 Source data: [`data_analysis/wise_alipay/`](../../../data_analysis/wise_alipay/) (`*_ideal/broadband/crossregion/4g.csv`).
 
 ### 4.2 Results (median, N=19)
+
+![End-to-end total time comparison](../../assets/charts/wise_alipay_total_time.svg)
 
 ![End-to-end phase breakdown](../../assets/charts/wise_alipay_phase_breakdown.svg)
 
@@ -152,8 +161,18 @@ The concurrent dual Prover shares a single Comlink Worker + a single Rayon WASM 
 | 4 | Cost of adapting to platform API changes | An API change needs two-layer adaptation (plugin + on-chain verifier); the latter goes through governance, with a response lag | `platforms/*.sol` |
 | 5 | Notary–buyer collusion boundary | T3 modeled as "honest-but-curious"; pure collusion fails if either T2/T3 holds; side-channel vulnerabilities + bondBps parameter sensitivity are residual risks | see [05-security-analysis.md](05-security-analysis.md) |
 
+> [!NOTE]
 > Limitation 2 ("unsalted hash") echoes the account-privacy analysis in [05-security-analysis.md](05-security-analysis.md); suggested approach: a per-order derived salt `H(accountId ‖ orderId ‖ chainId)`.
 
 ---
 
+> [!TIP]
 > How the design supports these results: see [04-protocol-design.md](04-protocol-design.md); for the security-goal argument see [05-security-analysis.md](05-security-analysis.md). All charts come from [`data_analysis/*.svg`](../../../data_analysis/), consistent with the `*.csv` sources.
+
+---
+
+<div align="center">
+
+◀ Prev [05 · Security analysis](05-security-analysis.md) · 🏠 [Docs home](../README.md) · 📚 [Source map](../reference/code-map.md)
+
+</div>

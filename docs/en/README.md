@@ -1,13 +1,19 @@
+<div align="center">
+
 # C2C zkTLS Protocol Docs · English Navigation
 
-> Open-source documentation accompanying a master's thesis: **a TLSNotary-based zkTLS semi-decentralized C2C fiat ↔ crypto exchange protocol**.
-> All facts follow the actual code and source data; code references are written as `file:line` and are clickable.
->
-> 🌐 中文版本 / Chinese version: [../zh/README.md](../zh/README.md)
+**A TLSNotary-based zkTLS semi-decentralized C2C fiat ↔ crypto exchange protocol**
+
+[🚀 Quickstart](hands-on/01-quickstart.md) · [🧠 Deep-dive](deep-dive/01-overview.md) · [📚 Source map](reference/code-map.md) · [🌐 中文](../zh/README.md)
+
+</div>
 
 ---
 
-## In 30 seconds
+> [!NOTE]
+> Open-source documentation accompanying a master's thesis. All facts follow the **actual code and source data**; code references are written as `file:line` and are clickable.
+
+## ⏱ In 30 seconds
 
 **The pain point**: in fiat ↔ crypto C2C exchange, the off-chain payment fact (an Alipay/Wise transfer) **cannot be directly verified by an on-chain contract**, so it can only rely on centralized-platform custody + manual arbitration.
 
@@ -15,7 +21,7 @@
 
 ---
 
-## The gap it fills: three properties at once
+## 🎯 The gap it fills: three properties at once
 
 This scheme is the only one of the mainstream routes that **achieves all three properties while supporting fiat exchange** (thesis ch2 comparison):
 
@@ -26,11 +32,12 @@ This scheme is the only one of the mainstream routes that **achieves all three p
 | Cryptographically verifiable payment proof | ✗ | ✗ | N/A | **✓** |
 | On-chain account-identifier privacy | ✗ | ✗ | N/A | **✓** |
 
-The cost: a weak trust in the verifier server + limited single-point-of-failure resistance under the current single node — the engineering trade-off of semi-decentralization.
+> [!NOTE]
+> The cost: a weak trust in the verifier server + limited single-point-of-failure resistance under the current single node — the engineering trade-off of semi-decentralization.
 
 ---
 
-## Choose your path
+## 🧭 Choose your path
 
 ### 🚀 Hands-on track (want to run it)
 1. [Quickstart](hands-on/01-quickstart.md) — run the minimal local loop (zero real accounts)
@@ -54,7 +61,19 @@ The cost: a weak trust in the verifier server + limited single-point-of-failure 
 
 ---
 
-## Thesis chapter ↔ document map
+## 📊 Key numbers
+
+- On-chain cost of a complete exchange ≈ **\$0.13** (Arbitrum One, mean tier)
+- End-to-end latency: Alipay 5.94 s / Wise 9.74 s (ideal); 17.44 s / 24.02 s (broadband)
+- Contract tests **336 passing / 0 failing** (live run)
+
+> [!IMPORTANT]
+> For the recomputation process, see [deep-dive/06-evaluation.md](deep-dive/06-evaluation.md).
+
+---
+
+<details>
+<summary>📑 <b>Thesis chapter ↔ document map</b> (click to expand)</summary>
 
 | Document | Main thesis source |
 |---|---|
@@ -69,12 +88,4 @@ The cost: a weak trust in the verifier server + limited single-point-of-failure 
 | [reference/code-map](reference/code-map.md) | ch4, ch5, the whole monorepo |
 | [hands-on/*](hands-on/01-quickstart.md) | ch5, README, demo/keeper |
 
----
-
-## Key numbers
-
-- On-chain cost of a complete exchange ≈ **\$0.13** (Arbitrum One, mean tier)
-- End-to-end latency: Alipay 5.94 s / Wise 9.74 s (ideal); 17.44 s / 24.02 s (broadband)
-- Contract tests **336 passing / 0 failing** (live run)
-
-> For the recomputation process, see [deep-dive/06-evaluation.md](deep-dive/06-evaluation.md).
+</details>

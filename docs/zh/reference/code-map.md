@@ -1,9 +1,10 @@
 # 源码地图：论文 ↔ 代码对照
 
-> **本篇定位**：让你「通过源码直接理解论文工作」。它是整套文档的**骨架**——其余各篇都引用这里的包职责划分与「论文概念↔源码位置」映射表。
-> **读者**：动手轨与深度轨共用。先看[总览](#1-monorepo-总览)建立心智地图，再用[映射大表](#3-论文概念--源码位置映射大表)按图索骥。
->
-> 事实以**实际源码**为准。所有代码引用写 `文件:行号`，可点击跳转。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：让你「通过源码直接理解论文工作」。它是整套文档的**骨架**——其余各篇都引用这里的包职责划分与「论文概念↔源码位置」映射表。
+> - **读者**：动手轨与深度轨共用。先看[总览](#1-monorepo-总览)建立心智地图，再用[映射大表](#3-论文概念--源码位置映射大表)按图索骥。
+> - 事实以**实际源码**为准。所有代码引用写 `文件:行号`，可点击跳转。
 
 ---
 
@@ -11,28 +12,30 @@
 
 代码位于 [`tlsn-extension/`](../../../tlsn-extension/)，采用 npm workspaces 多包结构。论文系统由**两条信任域**、**四个层次**构成；下表把论文的层次映射到代码包：
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  去中心化域（链上，确定性执行）                                    │
-│    packages/contracts  ── 托管、订单状态机、证明核验、风控、保证金 │
-├─────────────────────────────────────────────────────────────────┤
-│  受约束中心化域（链下，受密码学与信任名单约束）                     │
-│    packages/verifier   ── MPC-TLS 验证 + 账户核验 + 签名 + Webhook │
-├─────────────────────────────────────────────────────────────────┤
-│  证明生成层（用户侧）                                              │
-│    packages/extension  ── 浏览器扩展（MPC-TLS 证明生成）           │
-│    packages/plugin-sdk ── QuickJS 沙箱插件运行时 + HTTP 解析       │
-│    packages/tlsn-wasm  ── TLSNotary 证明的 WASM 绑定               │
-├─────────────────────────────────────────────────────────────────┤
-│  应用与运维层                                                      │
-│    packages/web        ── 交易 dApp（Next.js 前端）               │
-│    packages/keeper     ── 超时订单自动清理守护进程（链下、无特权） │
-│    packages/demo       ── Docker 演示环境 + 示例插件              │
-│    packages/tutorial   ── 插件开发教程                            │
-│    packages/common     ── 共享工具（日志）                        │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph L1["🟢 去中心化域 · 链上确定性执行"]
+        contracts["packages/contracts<br/>托管 · 订单状态机 · 证明核验 · 风控 · 保证金"]
+    end
+    subgraph L2["🟡 受约束中心化域 · 链下"]
+        verifier["packages/verifier<br/>MPC-TLS 验证 + 账户核验 + 签名 + Webhook"]
+    end
+    subgraph L3["证明生成层 · 用户侧"]
+        ext["packages/extension<br/>浏览器扩展（MPC-TLS 证明生成）"]
+        sdk["packages/plugin-sdk<br/>QuickJS 沙箱插件运行时 + HTTP 解析"]
+        wasm["packages/tlsn-wasm<br/>TLSNotary 证明的 WASM 绑定"]
+    end
+    subgraph L4["应用与运维层"]
+        web["packages/web · 交易 dApp（Next.js）"]
+        keeper["packages/keeper · 超时清理守护进程（无特权）"]
+        demo["packages/demo · Docker 演示 + 示例插件"]
+        tut["packages/tutorial · 插件开发教程"]
+        common["packages/common · 共享日志工具"]
+    end
+    L1 --- L2 --- L3 --- L4
 ```
 
+> [!NOTE]
 > 「去中心化域 / 受约束中心化域」的定义见 [glossary.md](glossary.md) 与 [deep-dive/01-overview.md](../deep-dive/01-overview.md)；为何这样划分见 [deep-dive/03-threat-model.md](../deep-dive/03-threat-model.md)。
 
 ---
@@ -52,6 +55,7 @@
 | [`tutorial`](../../../tlsn-extension/packages/tutorial/) | TypeScript | 插件开发教程 | ch5 | — |
 | [`common`](../../../tlsn-extension/packages/common/) | TypeScript | 共享日志工具 | — | — |
 
+> [!NOTE]
 > 📁 `web/src/components/` 为子目录结构：`admin/ binding/ dashboard/ merchant/ orders/ p2p/ proof/ shared/ trade/ ui/ layout/`（前端业务流按此组织）。
 
 ### 合约层文件清单（`packages/contracts/contracts/`）
@@ -74,6 +78,7 @@
 
 ## 3. 论文概念 ↔ 源码位置映射大表
 
+> [!IMPORTANT]
 > 这是本篇核心：论文概念 → 代码精确实现位置。
 
 ### 3.1 两大创新
@@ -187,4 +192,13 @@
 | 改合约 / 加支付平台 | [contracts.md](contracts.md) + [verifier-plugin.md](verifier-plugin.md) |
 | 复核实验数据 | [deep-dive/06-evaluation.md](../deep-dive/06-evaluation.md) |
 
+> [!TIP]
 > 名词不懂？查 [glossary.md](glossary.md)。
+
+---
+
+<div align="center">
+
+🏠 [文档导航](../README.md) · 🚀 [快速上手](../hands-on/01-quickstart.md) · 🧠 [深度轨](../deep-dive/01-overview.md) · 📚 [合约速查](contracts.md)
+
+</div>

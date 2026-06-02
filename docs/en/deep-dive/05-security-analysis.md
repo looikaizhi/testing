@@ -1,8 +1,12 @@
 # Security Analysis
 
-> **Purpose**: argue how the system achieves the five security goals S1–S5, and analyze economic security and the key trade-offs.
-> **Audience**: deep-dive track. Prerequisites: [03-threat-model.md](03-threat-model.md) (threats & trust assumptions T1–T5), [04-protocol-design.md](04-protocol-design.md) (mechanisms).
-> Thesis source: ch4.7, ch4.8. All facts follow the source.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: argue how the system achieves the five security goals S1–S5, and analyze economic security and the key trade-offs.
+> - **Audience**: deep-dive track. Prerequisites: [03-threat-model.md](03-threat-model.md) (threats & trust assumptions T1–T5), [04-protocol-design.md](04-protocol-design.md) (mechanisms).
+> - **Thesis source**: ch4.7, ch4.8. All facts follow the source.
+
+**Contents**: [Three-layer mapping](#1-three-layer-mapping-security-goals--trust-assumptions--protocol-mechanisms) · [S1 unforgeability](#2-s1--payment-proof-unforgeability) · [S2 replay resistance](#3-s2--replay-resistance) · [S3 account privacy](#4-s3--account-privacy-protection) · [S4 trust minimization](#5-s4--verifier-node-trust-minimization) · [S5 plugin isolation](#6-s5--plugin-execution-isolation) · [Economic security](#7-economic-security-beyond-s1s5) · [Key trade-offs](#8-key-trade-offs)
 
 ---
 
@@ -18,6 +22,7 @@ Security relies not on a single mechanism but on the contract, proof, and verifi
 | **S4** | Verifier-node trust minimization | T1∧T2∧T3 | Asset-irrelevance + registration enforcement + order-binding enforcement + MPC constraint | `trustedVerifiers` + five-step pipeline |
 | **S5** | Plugin execution isolation | T5 | QuickJS WASM sandbox capability limits | `plugin-sdk` sandbox config |
 
+> [!NOTE]
 > The definitions of T1 (chain consensus) / T2 (cryptography) / T3 (VS honest-but-curious in MPC-TLS) / T4 (account-identifier semantic truth) / T5 (user device not root-compromised) are in [03-threat-model.md](03-threat-model.md).
 
 ---
@@ -32,6 +37,7 @@ Security relies not on a single mechanism but on the contract, proof, and verifi
 
 On-chain, [`verifyAndDelegate`](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L196-L223) performs, in order: ECDSA signer verification ([`_recoverVerifierSigner`:272-285](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L272-L285), checking `trustedVerifiers`), H_bind consistency, and platform business checks. Under T1∧T2∧T3 the probability that a forged proof passes all checks reduces to solving a cryptographic hardness problem, negligible for a PPT attacker.
 
+> [!NOTE]
 > Cryptographic unforgeability only guarantees "the proof content = what PP actually returned"; the **semantic truth** of the payment fact further relies on T4. Test evidence: `ESC-ATT-01/05` (wrong H_bind / tampered signature), `ESC-TAMPER-01/02` all revert as expected.
 
 ---
@@ -55,9 +61,11 @@ In addition there is a third dedup layer at the platform level (`usedAlipayOrder
 2. **Notarization proof**: the account-identifier field is Pedersen-committed; the raw identifier lives only locally and in the VS's MPC environment.
 3. **Protocol execution**: the payer/payee account-consistency check is done in the MPC environment (off-chain accountCheck, [verifier/src/main.rs:1366-1422](../../../tlsn-extension/packages/verifier/src/main.rs#L1366-L1422)); the chain only verifies commitment consistency.
 
-> 💡 Account-identity matching is done by the **off-chain VS** (thesis ch4.4.2/S3); the on-chain platform verifier does not compare accounts — this is intentional: there is currently no way to verify identity on-chain without leaking privacy, and the on-chain account-check entry is reserved for a future fully-decentralized phase. See [04 §7](04-protocol-design.md).
->
-> 📌 **Privacy limitation (thesis ch6.5)**: account commitments are currently **unsalted** keccak256, so an attacker holding a candidate account set can enumerate matches in batch, degrading the hiding strength to a function of the candidate-space size. Improvement direction: a per-order derived salt `H(accountId ‖ orderId ‖ chainId)`. Also: in the demo deployment, because the Alipay proof reveals only the **masked** identity, the binding commits over the masked value ([deploy-web.ts:44-61](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L44-L61)).
+> [!TIP]
+> Account-identity matching is done by the **off-chain VS** (thesis ch4.4.2/S3); the on-chain platform verifier does not compare accounts — this is intentional: there is currently no way to verify identity on-chain without leaking privacy, and the on-chain account-check entry is reserved for a future fully-decentralized phase. See [04 §7](04-protocol-design.md).
+
+> [!IMPORTANT]
+> **Privacy limitation (thesis ch6.5)**: account commitments are currently **unsalted** keccak256, so an attacker holding a candidate account set can enumerate matches in batch, degrading the hiding strength to a function of the candidate-space size. Improvement direction: a per-order derived salt `H(accountId ‖ orderId ‖ chainId)`. Also: in the demo deployment, because the Alipay proof reveals only the **masked** identity, the binding commits over the masked value ([deploy-web.ts:44-61](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L44-L61)).
 
 ---
 
@@ -100,7 +108,8 @@ Two layers of economic constraint:
 - **Layer 1**: each default directly forfeits that round's bond ([`onTimeout`, C2CRiskManager.sol:172-193](../../../tlsn-extension/packages/contracts/contracts/C2CRiskManager.sol#L172-L193) + [`BondVault.settle`](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L84)); the total attack cost grows linearly with concurrent orders.
 - **Layer 2**: reputation dynamically raises `bondBps` and triggers a temporary freeze at a threshold, making each attack progressively costlier.
 
-> 📌 **Parameter-sensitivity limitation** (thesis ch4.7.3 + ch6.5): if `bondBps` is set too low, a large-capital attacker can still sustain attacks at a small relative loss. The parameters are adjustable via `setRiskConfig` ([C2CRiskManager.sol:86-102](../../../tlsn-extension/packages/contracts/contracts/C2CRiskManager.sol#L86-L102)) and should be weighed against asset scale and the risk/reward ratio. Test `BOND-19`: an extreme stepBps → returns maxBondBps without panicking.
+> [!IMPORTANT]
+> **Parameter-sensitivity limitation** (thesis ch4.7.3 + ch6.5): if `bondBps` is set too low, a large-capital attacker can still sustain attacks at a small relative loss. The parameters are adjustable via `setRiskConfig` ([C2CRiskManager.sol:86-102](../../../tlsn-extension/packages/contracts/contracts/C2CRiskManager.sol#L86-L102)) and should be weighed against asset scale and the risk/reward ratio. Test `BOND-19`: an extreme stepBps → returns maxBondBps without panicking.
 
 ---
 
@@ -112,4 +121,13 @@ Two layers of economic constraint:
 | On-chain observable information | Order amount in plaintext, account commitment deterministic-fixed, susceptible to statistical analysis | Amount range proofs (Bulletproofs), account derived salt (extensible without changing core contracts) |
 | Collusion boundary | T3 modeled as honest-but-curious; pure collusion fails if either T2/T3 holds; side-channel vulnerabilities are residual risk | TEE-isolated notarization, formal verification of the MPC implementation |
 
+> [!TIP]
 > The semi-decentralized dual-domain architecture (decentralized domain 𝒟 + constrained centralized domain 𝒞) has fully decoupled failure modes: a VS protocol-external failure (cheating) cannot produce a valid fake proof under T2 (on-chain verification fails). See [03-threat-model.md](03-threat-model.md), [01-overview.md](01-overview.md). For measured limitations, see [06-evaluation.md §5](06-evaluation.md).
+
+---
+
+<div align="center">
+
+◀ Prev [04 · Protocol design](04-protocol-design.md) · 🏠 [Docs home](../README.md) · Next ▶ [06 · Evaluation](06-evaluation.md)
+
+</div>

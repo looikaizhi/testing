@@ -1,8 +1,12 @@
 # 验证器与插件：可扩展性参考
 
-> **本篇定位**：协议的可扩展性——平台验证器如何抽象、支付宝/Wise 怎么实现、**如何接入第 3 个支付平台**、插件 SDK API、Webhook 配置。
-> **读者**：想扩展协议的进阶动手同学。前置阅读 [code-map.md](code-map.md)、[contracts.md](contracts.md)。
-> 事实以源码为准。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：协议的可扩展性——平台验证器如何抽象、支付宝/Wise 怎么实现、**如何接入第 3 个支付平台**、插件 SDK API、Webhook 配置。
+> - **读者**：想扩展协议的进阶动手同学。前置阅读 [code-map.md](code-map.md)、[contracts.md](contracts.md)。
+> - 事实以源码为准。
+
+**目录**：[接口抽象](#1-平台验证器接口抽象) · [支付宝/Wise 实现](#2-支付宝--wise-实现要点) · [接入新平台](#3-接入第-3-个支付平台) · [插件 SDK API](#4-插件-sdk-api) · [Webhook 配置](#5-webhook-配置)
 
 ---
 
@@ -48,7 +52,8 @@ verifyAndDelegate(platformId, isMerchantSent, proofs, paramsData)
 | `orderId` | `keccak256(orderId)` 作 `txId`，写入 `usedAlipayOrderIds` 去重 |
 | `gmtSuccess` | 经 `TLSNParserLib.parseDatetimeToUnix` 解析，须落在 `[orderCreationTime, orderDeadline]` |
 
-> 💡 链上业务校验只要求 5 个金额/状态/时间字段（[:184-186](../../../tlsn-extension/packages/contracts/contracts/platforms/AlipayPlatformVerifier.sol#L184-L186)）；收款人身份匹配由**验证服务器 accountCheck** 在链下完成（见 §2 末尾说明）。
+> [!TIP]
+> 链上业务校验只要求 5 个金额/状态/时间字段（[:184-186](../../../tlsn-extension/packages/contracts/contracts/platforms/AlipayPlatformVerifier.sol#L184-L186)）；收款人身份匹配由**验证服务器 accountCheck** 在链下完成（见 §2 末尾说明）。
 
 ### 2.2 Wise（双证明）
 
@@ -64,8 +69,10 @@ verifyAndDelegate(platformId, isMerchantSent, proofs, paramsData)
 | `id` | 作 `transferId` 写入 `usedTransferIds` 去重 |
 | `date`（毫秒） | `/1000` 后须落在 `[orderCreationTime, orderDeadline]` |
 
-> 💡 `_verifyContacts`（[:121-123](../../../tlsn-extension/packages/contracts/contracts/platforms/WisePlatformVerifier.sol#L121-L123)）为空函数——contacts 证明在结构上必需（须通过密码学核验且 serverName 受信），其收款人身份内容由验证服务器 accountCheck 在链下核验。
->
+> [!TIP]
+> `_verifyContacts`（[:121-123](../../../tlsn-extension/packages/contracts/contracts/platforms/WisePlatformVerifier.sol#L121-L123)）为空函数——contacts 证明在结构上必需（须通过密码学核验且 serverName 受信），其收款人身份内容由验证服务器 accountCheck 在链下核验。
+
+> [!IMPORTANT]
 > **为什么账户校验放在链下**：当前无法在不泄露隐私的前提下于链上验证身份——对整个协议直接套 zk 会显著增加时延与手续费，对各方都不利。因此采用「链下 accountCheck + 验证器对 `orderBindingHash`（含账户哈希）签名」的方案：验证器的签名保证了签名前已核对正确账户。链上的账户校验入口预留给未来完全去中心化阶段（zkTLS 性能达标后可平滑迁移上链）。详见 [03-threat-model.md](../deep-dive/03-threat-model.md)、[05-security-analysis.md](../deep-dive/05-security-analysis.md)。
 
 ---
@@ -97,10 +104,12 @@ interface PaymentPlatform {
 }
 ```
 
+> [!NOTE]
 > 📁 前端 adapter 在 `web/src/platforms/`：`registry.ts`/`types.ts`/`wise.ts`/`alipay.ts`。
 
 **④ 插件**：提供取证插件（在浏览器扩展中跑，生成对应平台的 TLS 证明），见 §4 与 [`packages/tutorial`](../../../tlsn-extension/packages/tutorial/)。
 
+> [!TIP]
 > 接入新平台的概念见论文 ch4.4.4；具体函数签名与前端位置以本节为准。
 
 ---
@@ -153,4 +162,13 @@ webhooks:
     url: "https://your-backend.example.com/webhook/default"
 ```
 
+> [!NOTE]
 > 📍 实现位置：Webhook 投递逻辑位于 [`verifier/src/main.rs`](../../../tlsn-extension/packages/verifier/src/main.rs)（`webhook.rs` 为占位模块）。
+
+---
+
+<div align="center">
+
+🏠 [文档导航](../README.md) · 📚 [合约速查](contracts.md) · 🗺 [源码地图](code-map.md) · 🧠 [协议设计](../deep-dive/04-protocol-design.md)
+
+</div>

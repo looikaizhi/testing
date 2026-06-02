@@ -1,8 +1,13 @@
 # Protocol & System Design ⭐
 
-> **Purpose**: the main page on protocol and system design, including the two innovations. Understand this page and you understand the thesis work.
-> **Audience**: deep-dive track. Prerequisites: [01-overview.md](01-overview.md), [02-zktls-tlsnotary.md](02-zktls-tlsnotary.md); companions [reference/contracts.md](../reference/contracts.md), [reference/code-map.md](../reference/code-map.md).
-> Thesis source: ch4.1–4.6. All facts follow the source.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: the main page on protocol and system design, including the two innovations. Understand this page and you understand the thesis work.
+> - **Audience**: deep-dive track.
+> - **Prerequisites/companions**: [01-overview.md](01-overview.md), [02-zktls-tlsnotary.md](02-zktls-tlsnotary.md); [reference/contracts.md](../reference/contracts.md), [reference/code-map.md](../reference/code-map.md).
+> - **Thesis source**: ch4.1–4.6. All facts follow the source.
+
+**Contents**: [Layered architecture](#1-layered-architecture--components) · [Dual-protocol mirror](#2-crypto--fiat-dual-protocol-mirror) · [Five contracts](#3-on-chain-contract-layer-five-contracts) · [Order FSM](#4-order-state-machine) · [Off-chain proof layer](#5-off-chain-proof-layer) · [Innovation ① order binding](#6-innovation--selective-disclosure-spec--order-binding-digest) · [Platform verifiers](#7-platform-verifiers) · [Risk management](#8-risk-management) · [Compliance & Webhook](#9-compliance-fields--webhook)
 
 ---
 
@@ -41,12 +46,14 @@ In code, the two branches of `placeOrder` are this mirror: CRYPTO buyer pays bon
 
 Five core contracts + the platform verifiers, with the escrow as the single write entry (thesis ch4.2.1):
 
-```
-User ──→ C2CEscrow (single write entry) ──→ TLSNVerifier ──registry──→ platforms/*Verifier
-              │
-              ├──→ C2CRiskManager (reputation / bond rate)
-              ├──→ C2CBondVault (bond custody / settlement)
-              └──(read-only)──→ C2CAdmin (assets / merchants / rates / allowlist)
+```mermaid
+flowchart LR
+    U["User"] --> E["C2CEscrow<br/>single write entry"]
+    E --> V["TLSNVerifier"]
+    V -->|registry| P["platforms/*Verifier<br/>Alipay / Wise"]
+    E --> R["C2CRiskManager<br/>reputation / bond rate"]
+    E --> B["C2CBondVault<br/>bond custody / settlement"]
+    E -.read-only.-> A["C2CAdmin<br/>assets / merchants / rates / allowlist"]
 ```
 
 For a quick reference of interfaces, events, and permissions, see [contracts.md](../reference/contracts.md). The "single write entry + read-only config hub + registry dispatch" structure keeps things modular while staying under the EVM 24.5 KB contract size limit.
@@ -57,19 +64,18 @@ For a quick reference of interfaces, events, and permissions, see [contracts.md]
 
 A finite state automaton (thesis ch4.2.5, eq:ch4-order-fsm):
 
-```
-            placeOrder(CRYPTO)              payOrderByPlatform(proof verified)
-   ●─────────────────────────→ PENDING ─────────────────────────────→ COMPLETED ●
-                                  │
-                                  │ timeout(>deadline) sweepExpired*(anyone)
-                                  ↓
-                               EXPIRED ●
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: placeOrder(CRYPTO)
+    PENDING --> COMPLETED: payOrderByPlatform(proof verified)
+    PENDING --> EXPIRED: timeout(>deadline) sweepExpired*(anyone)
 
-            placeOrder(FIAT)               receiveCryptoWithPlatformPayment(proof verified)
-   ●─────────────────────────→ WAITING ─────────────────────────────→ COMPLETED ●
-                                  │ timeout
-                                  ↓
-                               EXPIRED ●
+    [*] --> WAITING: placeOrder(FIAT)
+    WAITING --> COMPLETED: receiveCryptoWithPlatformPayment(proof verified)
+    WAITING --> EXPIRED: timeout
+
+    COMPLETED --> [*]
+    EXPIRED --> [*]
 ```
 
 - `Q = {PENDING, WAITING, COMPLETED, EXPIRED}`, terminal `F = {COMPLETED, EXPIRED}` ([C2CTypes.sol:13-18](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L13-L18)).
@@ -77,6 +83,7 @@ A finite state automaton (thesis ch4.2.5, eq:ch4-order-fsm):
 - Four structural invariants: I₁ fund conservation, I₂ single active order, I₃ terminal irreversibility, I₄ bond binding (thesis ch4.2.5).
 - **Expiry cleanup is permissionless**: anyone can call `sweepExpired*` ([:889-908](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L889-L908)); the off-chain [keeper](../../../tlsn-extension/packages/keeper/) is merely a convenience and holds no privilege.
 
+> [!NOTE]
 > State names are from the buyer's perspective: `PENDING` = buyer to prove, `WAITING` = buyer waiting for the merchant to prove.
 
 ---
@@ -118,7 +125,8 @@ H_bind = keccak256(
 
 `H_bind` is passed off-chain as sessionData and covered by the VS signature digest; on-chain it is rebuilt from the same parameters and compared ([`_requireOrderBinding`:423-425](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L423-L425)). **Any parameter tampering → rebuilt H_bind mismatch → recovered signer not in the allowlist → reject**. This eliminates the room to "transplant a valid proof to another order" without any extra timing constraint.
 
-> 💡 Among the 15 fields, the 4 account hashes (merchant and buyer payer/payee, each name+id) are flattened directly into the binding, locking the payer/payee identities in; `rateVersion` brings the rate version into the binding too — a proof generated for an old order with a new rate version is rejected on H_bind mismatch (verified by the rate-snapshot test `RATE-07`).
+> [!TIP]
+> Among the 15 fields, the 4 account hashes (merchant and buyer payer/payee, each name+id) are flattened directly into the binding, locking the payer/payee identities in; `rateVersion` brings the rate version into the binding too — a proof generated for an old order with a new rate version is rejected on H_bind mismatch (verified by the rate-snapshot test `RATE-07`).
 
 There is also `orderKey` (the bond isolation key) = 6 fields ([`_orderKey`:431-440](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L431-L440)): `keccak256(escrow, chainId, merchant, productId, assetType, orderId)`.
 
@@ -130,7 +138,8 @@ Thesis ch4.4. Unified interface `IPlatformVerifier`: after `TLSNVerifier` comple
 
 **Account-identity verification is done off-chain by the VS** (thesis ch4.4.2): before signing, the VS extracts the payee account identifier from the response and **compares it off-chain** against the merchant's on-chain pre-registered account hash; it signs only after this passes. The TLSNProof struct contains no account plaintext; the existence of the VS signature is itself proof that account verification passed. In the two-proof Wise flow, the contacts proof likewise must pass cryptographic verification with a trusted serverName, and its account content is verified off-chain by the VS.
 
-> 💡 **Design intent**: the on-chain platform verifier does not compare accounts; account matching is designed off-chain — there is currently no way to verify identity on-chain without leaking privacy (running zk over the whole protocol would significantly increase latency and fees, bad for every party), so the pragmatic "off-chain accountCheck + verifier signature" approach is used; the on-chain account-check entry point is reserved for a future fully-decentralized phase (it can migrate on-chain smoothly once zkTLS performance is sufficient).
+> [!IMPORTANT]
+> **Design intent**: the on-chain platform verifier does not compare accounts; account matching is designed off-chain — there is currently no way to verify identity on-chain without leaking privacy (running zk over the whole protocol would significantly increase latency and fees, bad for every party), so the pragmatic "off-chain accountCheck + verifier signature" approach is used; the on-chain account-check entry point is reserved for a future fully-decentralized phase (it can migrate on-chain smoothly once zkTLS performance is sufficient).
 
 **paramsData = 4 fields**: `(fiatAmountX1000, targetCurrency, orderDeadline, orderCreationTime)`; the payment time must fall within the `[created, deadline]` window, preventing reuse of old/expired transfers ([IPlatformVerifier.sol:10-18](../../../tlsn-extension/packages/contracts/contracts/interfaces/IPlatformVerifier.sol#L10-L18)).
 
@@ -159,4 +168,13 @@ Thesis ch4.6. Dual-channel archiving:
 
 ---
 
+> [!TIP]
 > How these mechanisms guarantee the security goals: see [05-security-analysis.md](05-security-analysis.md); for measured performance see [06-evaluation.md](06-evaluation.md); for the cryptographic principles see [02-zktls-tlsnotary.md](02-zktls-tlsnotary.md).
+
+---
+
+<div align="center">
+
+◀ Prev [03 · Threat model](03-threat-model.md) · 🏠 [Docs home](../README.md) · Next ▶ [05 · Security analysis](05-security-analysis.md)
+
+</div>

@@ -1,8 +1,12 @@
 # zkTLS 与 TLSNotary：密码学基石
 
-> **本篇定位**：协议的密码学基石——为什么链下支付能被链上可信验证。
-> **读者**：深度轨。后接 [03-threat-model.md](03-threat-model.md)、[04-protocol-design.md](04-protocol-design.md)。
-> 论文来源：ch2.2–2.4。事实以源码为准。名词见 [glossary.md](../reference/glossary.md)。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：协议的密码学基石——为什么链下支付能被链上可信验证。
+> - **读者**：深度轨。后接 [03-threat-model.md](03-threat-model.md)、[04-protocol-design.md](04-protocol-design.md)。
+> - **论文来源**：ch2.2–2.4。事实以源码为准。名词见 [glossary.md](../reference/glossary.md)。
+
+**目录**：[TLS 握手](#1-tls-12-握手与密钥协商) · [记录层局限](#2-记录层与第三方验证局限) · [zkTLS 路线选型](#3-zktls-思想与路线选型) · [TLSNotary 原理](#4-tlsnotary-原理) · [三项扩展](#5-本文在-tlsnotary-上的三项扩展) · [工程实例化](#6-工程实例化要点代码对照)
 
 ---
 
@@ -22,6 +26,7 @@ $$MS = \text{PRF}(PMS, \text{"master secret"}, R_c‖R_s), \quad K_{session} = \
 
 **核心局限**（论文 ch2.2.2）：TLS 1.2 的来源真实性**只对通信双方成立**，无法延伸为面向第三方的独立验证。客户端拿到明文后即有能力复制/伪造内容，第三方无法仅凭用户提交的截图/接口返回判断真伪。
 
+> [!NOTE]
 > 在本系统场景：支付状态、金额、收款账户只存在于支付平台返回的 HTTPS 响应里，链上合约无法直接访问、也无法判断真伪。这正是引入 zkTLS 的动机。
 
 ---
@@ -95,8 +100,18 @@ $$m = \text{keccak256}(\text{chainId} ‖ \text{keccak256}(sid) ‖ H_{comm} ‖
 | 承诺开启校验 | 揭示项 value+blinder 重建承诺并比对 | [`_verifyCommitmentOpenings`, TLSNVerifier.sol:246-262](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L246-L262) |
 | 证明结构 π | `TLSNProof`（sessionId/chainId/commitments/revealedItems/commitmentOpenings/orderBindingHash/policyVersionHash/verifierSignature/serverName） | [C2CTypes.sol:35-69](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L35-L69) |
 
-> 💡 通用 TLSNotary 常把承诺聚合为 Merkle 根；本系统按 ch4.3 实例化为 **keccak256 顺序拼接**，以适配 EVM 上的单次比对（代码 `_verifyCommitmentsHash`）。
+> [!TIP]
+> 通用 TLSNotary 常把承诺聚合为 Merkle 根；本系统按 ch4.3 实例化为 **keccak256 顺序拼接**，以适配 EVM 上的单次比对（代码 `_verifyCommitmentsHash`）。
 
 ---
 
+> [!TIP]
 > 这些密码学机制如何组装成协议，见 [04-protocol-design.md](04-protocol-design.md)；如何论证安全目标，见 [05-security-analysis.md](05-security-analysis.md)；性能代价见 [06-evaluation.md §3](06-evaluation.md)。
+
+---
+
+<div align="center">
+
+◀ 上一篇 [01 · 总览](01-overview.md) · 🏠 [文档导航](../README.md) · 下一篇 ▶ [03 · 威胁模型](03-threat-model.md)
+
+</div>

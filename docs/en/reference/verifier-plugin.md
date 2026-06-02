@@ -1,8 +1,12 @@
 # Verifier & Plugins: Extensibility Reference
 
-> **Purpose**: the protocol's extensibility — how platform verifiers are abstracted, how Alipay/Wise are implemented, **how to add a 3rd payment platform**, the plugin SDK API, Webhook config.
-> **Audience**: advanced hands-on readers who want to extend the protocol. Prerequisites: [code-map.md](code-map.md), [contracts.md](contracts.md).
-> All facts follow the source.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: the protocol's extensibility — how platform verifiers are abstracted, how Alipay/Wise are implemented, **how to add a 3rd payment platform**, the plugin SDK API, Webhook config.
+> - **Audience**: advanced hands-on readers who want to extend the protocol. Prerequisites: [code-map.md](code-map.md), [contracts.md](contracts.md).
+> - All facts follow the source.
+
+**Contents**: [Interface abstraction](#1-platform-verifier-interface-abstraction) · [Alipay/Wise](#2-alipay--wise-implementation-notes) · [Add a new platform](#3-adding-a-3rd-payment-platform) · [Plugin SDK API](#4-plugin-sdk-api) · [Webhook config](#5-webhook-configuration)
 
 ---
 
@@ -48,7 +52,8 @@ Source: [`platforms/AlipayPlatformVerifier.sol`](../../../tlsn-extension/package
 | `orderId` | `keccak256(orderId)` as `txId`, written to `usedAlipayOrderIds` for dedup |
 | `gmtSuccess` | Parsed by `TLSNParserLib.parseDatetimeToUnix`, must fall within `[orderCreationTime, orderDeadline]` |
 
-> 💡 On-chain business checks require only the 5 amount/status/time fields ([:184-186](../../../tlsn-extension/packages/contracts/contracts/platforms/AlipayPlatformVerifier.sol#L184-L186)); payee-identity matching is done off-chain by the **verifier server `accountCheck`** (see the note at the end of §2).
+> [!TIP]
+> On-chain business checks require only the 5 amount/status/time fields ([:184-186](../../../tlsn-extension/packages/contracts/contracts/platforms/AlipayPlatformVerifier.sol#L184-L186)); payee-identity matching is done off-chain by the **verifier server `accountCheck`** (see the note at the end of §2).
 
 ### 2.2 Wise (two proofs)
 
@@ -64,8 +69,10 @@ Source: [`platforms/WisePlatformVerifier.sol`](../../../tlsn-extension/packages/
 | `id` | As `transferId`, written to `usedTransferIds` for dedup |
 | `date` (ms) | After `/1000`, must fall within `[orderCreationTime, orderDeadline]` |
 
-> 💡 `_verifyContacts` ([:121-123](../../../tlsn-extension/packages/contracts/contracts/platforms/WisePlatformVerifier.sol#L121-L123)) is an empty function — the contacts proof is structurally required (it still must pass cryptographic verification and a trusted serverName), and its payee-identity content is verified off-chain by the verifier server's accountCheck.
->
+> [!TIP]
+> `_verifyContacts` ([:121-123](../../../tlsn-extension/packages/contracts/contracts/platforms/WisePlatformVerifier.sol#L121-L123)) is an empty function — the contacts proof is structurally required (it still must pass cryptographic verification and a trusted serverName), and its payee-identity content is verified off-chain by the verifier server's accountCheck.
+
+> [!IMPORTANT]
 > **Why account verification is off-chain**: there is currently no way to verify identity on-chain without leaking privacy — running zk over the whole protocol would significantly increase latency and fees, bad for every party. So the design uses "off-chain accountCheck + the verifier signature over `orderBindingHash` (which includes the account hashes)": the verifier's signature guarantees the correct accounts were checked before signing. The on-chain account-check entry point is reserved for a future fully-decentralized phase (it can migrate on-chain once zkTLS performance is sufficient). See [03-threat-model.md](../deep-dive/03-threat-model.md), [05-security-analysis.md](../deep-dive/05-security-analysis.md).
 
 ---
@@ -97,10 +104,12 @@ interface PaymentPlatform {
 }
 ```
 
+> [!NOTE]
 > 📁 The frontend adapter is in `web/src/platforms/`: `registry.ts`/`types.ts`/`wise.ts`/`alipay.ts`.
 
 **④ Plugin**: provide a notarization plugin (runs in the browser extension, generates the platform's TLS proof); see §4 and [`packages/tutorial`](../../../tlsn-extension/packages/tutorial/).
 
+> [!TIP]
 > The concept of adding a new platform is in thesis ch4.4.4; for exact function signatures and frontend locations, follow this section.
 
 ---
@@ -153,4 +162,13 @@ webhooks:
     url: "https://your-backend.example.com/webhook/default"
 ```
 
+> [!NOTE]
 > 📍 Implementation location: the Webhook delivery logic is in [`verifier/src/main.rs`](../../../tlsn-extension/packages/verifier/src/main.rs) (`webhook.rs` is a placeholder module).
+
+---
+
+<div align="center">
+
+🏠 [Docs home](../README.md) · 📚 [Contracts](contracts.md) · 🗺 [Source map](code-map.md) · 🧠 [Protocol design](../deep-dive/04-protocol-design.md)
+
+</div>

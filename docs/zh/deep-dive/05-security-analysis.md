@@ -1,8 +1,12 @@
 # 安全分析
 
-> **本篇定位**：论证系统如何达成五项安全目标 S1–S5，并分析经济安全与关键权衡。
-> **读者**：深度轨。前置 [03-threat-model.md](03-threat-model.md)（威胁与信任假设 T1–T5）、[04-protocol-design.md](04-protocol-design.md)（机制）。
-> 论文来源：ch4.7、ch4.8。事实以源码为准。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：论证系统如何达成五项安全目标 S1–S5，并分析经济安全与关键权衡。
+> - **读者**：深度轨。前置 [03-threat-model.md](03-threat-model.md)（威胁与信任假设 T1–T5）、[04-protocol-design.md](04-protocol-design.md)（机制）。
+> - **论文来源**：ch4.7、ch4.8。事实以源码为准。
+
+**目录**：[三层映射](#1-三层映射安全目标--信任假设--协议机制) · [S1 不可伪造](#2-s1--支付证明不可伪造性) · [S2 抗重放](#3-s2--证明抗重放性) · [S3 账户隐私](#4-s3--账户隐私保护) · [S4 信任最小化](#5-s4--验证节点信任最小化) · [S5 插件隔离](#6-s5--插件执行安全隔离) · [经济安全](#7-经济安全超出-s1s5) · [关键权衡](#8-关键权衡)
 
 ---
 
@@ -18,6 +22,7 @@
 | **S4** | 验证节点信任最小化 | T1∧T2∧T3 | 资产无关 + 注册强制 + 订单绑定强制 + MPC 约束 | `trustedVerifiers` + 五步流水线 |
 | **S5** | 插件执行隔离 | T5 | QuickJS WASM 沙箱能力限制 | `plugin-sdk` 沙箱配置 |
 
+> [!NOTE]
 > 信任假设 T1（链共识）/T2（密码学）/T3（VS 诚实执行 MPC-TLS，honest-but-curious）/T4（账户标识语义真实）/T5（用户设备未被 root 入侵）的完整定义见 [03-threat-model.md](03-threat-model.md)。
 
 ---
@@ -32,6 +37,7 @@
 
 链上 [`verifyAndDelegate`](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L196-L223) 依次执行 ECDSA 签名者校验（[`_recoverVerifierSigner`:272-285](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L272-L285)，查 `trustedVerifiers`）、H_bind 一致性、平台业务校验。在 T1∧T2∧T3 下伪造证明通过全部校验的概率可归约至密码学困难问题，对 PPT 攻击者可忽略。
 
+> [!NOTE]
 > 密码学不可伪造性仅保证「证明内容 = PP 实际返回的响应」；支付事实的**语义真实性**还依赖 T4。测试佐证：`ESC-ATT-01/05`（错误 H_bind / 篡改签名）、`ESC-TAMPER-01/02` 均按预期 revert。
 
 ---
@@ -55,9 +61,11 @@
 2. **公证证明**：账户标识字段采 Pedersen 承诺处理，原始标识仅存于本地与 VS 的 MPC 环境。
 3. **协议执行**：收付款账户一致性校验在 MPC 环境完成（链下 accountCheck，[verifier/src/main.rs:1366-1422](../../../tlsn-extension/packages/verifier/src/main.rs#L1366-L1422)），链上只验承诺一致性。
 
-> 💡 账户身份匹配在**链下 VS** 完成（论文 ch4.4.2/S3），链上平台验证器不做账户比对——这是有意设计：当前无法在不泄露隐私下链上验证身份，链上的账户校验入口预留给未来完全去中心化阶段。详见 [04 §7](04-protocol-design.md)。
->
-> 📌 **隐私局限（论文 ch6.5）**：当前账户承诺为**无盐** keccak256，掌握候选账户集的攻击者可批量枚举匹配，隐匿强度退化为候选空间规模函数。改进方向：以 `H(accountId ‖ orderId ‖ chainId)` 派生盐绑定每笔订单。另：演示部署中支付宝因证明只揭示**掩码**身份，绑定对掩码值取承诺（[deploy-web.ts:44-61](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L44-L61)）。
+> [!TIP]
+> 账户身份匹配在**链下 VS** 完成（论文 ch4.4.2/S3），链上平台验证器不做账户比对——这是有意设计：当前无法在不泄露隐私下链上验证身份，链上的账户校验入口预留给未来完全去中心化阶段。详见 [04 §7](04-protocol-design.md)。
+
+> [!IMPORTANT]
+> **隐私局限（论文 ch6.5）**：当前账户承诺为**无盐** keccak256，掌握候选账户集的攻击者可批量枚举匹配，隐匿强度退化为候选空间规模函数。改进方向：以 `H(accountId ‖ orderId ‖ chainId)` 派生盐绑定每笔订单。另：演示部署中支付宝因证明只揭示**掩码**身份，绑定对掩码值取承诺（[deploy-web.ts:44-61](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L44-L61)）。
 
 ---
 
@@ -100,7 +108,8 @@
 - **第一层**：每次违约直接没收当次 bond（[`onTimeout`, C2CRiskManager.sol:172-193](../../../tlsn-extension/packages/contracts/contracts/C2CRiskManager.sol#L172-L193) + [`BondVault.settle`](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L84)），攻击总成本随并发订单线性增长。
 - **第二层**：信誉动态调高 `bondBps`、达阈值临时封禁，单次攻击成本递增。
 
-> 📌 **参数敏感性局限**（论文 ch4.7.3 + ch6.5）：若 `bondBps` 设置偏低，大资金攻击者仍可承受较小相对损失持续攻击。参数 `setRiskConfig` 可调（[C2CRiskManager.sol:86-102](../../../tlsn-extension/packages/contracts/contracts/C2CRiskManager.sol#L86-L102)），须按资产规模与风险收益比权衡。测试 `BOND-19`：极大 stepBps → 返回 maxBondBps 不 panic。
+> [!IMPORTANT]
+> **参数敏感性局限**（论文 ch4.7.3 + ch6.5）：若 `bondBps` 设置偏低，大资金攻击者仍可承受较小相对损失持续攻击。参数 `setRiskConfig` 可调（[C2CRiskManager.sol:86-102](../../../tlsn-extension/packages/contracts/contracts/C2CRiskManager.sol#L86-L102)），须按资产规模与风险收益比权衡。测试 `BOND-19`：极大 stepBps → 返回 maxBondBps 不 panic。
 
 ---
 
@@ -112,4 +121,13 @@
 | 链上可观察信息 | 订单金额明文、账户承诺确定性固定，可被统计分析 | 金额范围证明（Bulletproofs）、账户派生盐（不改核心合约即可扩展） |
 | 串谋边界 | T3 建模为 honest-but-curious；纯串谋在 T2/T3 至少一成立时失效；侧信道漏洞是残余风险 | TEE 隔离公证计算、MPC 实现形式化验证 |
 
+> [!TIP]
 > 半去中心化双域架构（去中心化域 𝒟 + 受约束中心化域 𝒞）的失效模式完全解耦：VS 协议外失效（作弊）在 T2 下也无法产生有效虚假证明（链上验证失败）。详见 [03-threat-model.md](03-threat-model.md)、[01-overview.md](01-overview.md)。实测局限见 [06-evaluation.md §5](06-evaluation.md)。
+
+---
+
+<div align="center">
+
+◀ 上一篇 [04 · 协议设计](04-protocol-design.md) · 🏠 [文档导航](../README.md) · 下一篇 ▶ [06 · 评估](06-evaluation.md)
+
+</div>

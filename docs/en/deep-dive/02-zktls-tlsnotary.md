@@ -1,8 +1,12 @@
 # zkTLS & TLSNotary: the Cryptographic Foundation
 
-> **Purpose**: the protocol's cryptographic foundation — why an off-chain payment can be trustlessly verified on-chain.
-> **Audience**: deep-dive track. Followed by [03-threat-model.md](03-threat-model.md), [04-protocol-design.md](04-protocol-design.md).
-> Thesis source: ch2.2–2.4. All facts follow the source. Terms in [glossary.md](../reference/glossary.md).
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: the protocol's cryptographic foundation — why an off-chain payment can be trustlessly verified on-chain.
+> - **Audience**: deep-dive track. Followed by [03-threat-model.md](03-threat-model.md), [04-protocol-design.md](04-protocol-design.md).
+> - **Thesis source**: ch2.2–2.4. All facts follow the source. Terms in [glossary.md](../reference/glossary.md).
+
+**Contents**: [TLS handshake](#1-tls-12-handshake--key-agreement) · [Record-layer gap](#2-the-record-layer--the-third-party-verification-gap) · [zkTLS route](#3-the-zktls-idea--route-selection) · [TLSNotary principles](#4-tlsnotary-principles) · [Three extensions](#5-this-works-three-extensions-to-tlsnotary) · [Engineering instantiation](#6-engineering-instantiation-notes-code-mapping)
 
 ---
 
@@ -22,6 +26,7 @@ After the handshake comes the record layer: HTTP request line, response body, co
 
 **The core limitation** (thesis ch2.2.2): TLS 1.2's provenance authenticity **holds only for the two communicating parties**, and cannot be extended to independent third-party verification. Once the client obtains the plaintext, it can copy/forge content, and a third party cannot judge authenticity from a user-submitted screenshot/API response alone.
 
+> [!NOTE]
 > In this system's scenario: payment status, amount, and payee account exist only in the HTTPS response from the payment platform, which the on-chain contract cannot directly access or judge. This is precisely the motivation for zkTLS.
 
 ---
@@ -95,8 +100,18 @@ On-demand disclosure is refined into a field-level declarative spec (Handlers); 
 | Commitment-opening check | Rebuild the commitment from the revealed item's value+blinder and compare | [`_verifyCommitmentOpenings`, TLSNVerifier.sol:246-262](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L246-L262) |
 | Proof structure π | `TLSNProof` (sessionId/chainId/commitments/revealedItems/commitmentOpenings/orderBindingHash/policyVersionHash/verifierSignature/serverName) | [C2CTypes.sol:35-69](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L35-L69) |
 
-> 💡 Generic TLSNotary often aggregates commitments into a Merkle root; this system instantiates it as **sequential keccak256 concatenation** per ch4.3, to fit a single on-chain comparison on the EVM (code `_verifyCommitmentsHash`).
+> [!TIP]
+> Generic TLSNotary often aggregates commitments into a Merkle root; this system instantiates it as **sequential keccak256 concatenation** per ch4.3, to fit a single on-chain comparison on the EVM (code `_verifyCommitmentsHash`).
 
 ---
 
+> [!TIP]
 > How these cryptographic mechanisms assemble into the protocol: see [04-protocol-design.md](04-protocol-design.md); how the security goals are argued: see [05-security-analysis.md](05-security-analysis.md); the performance cost: see [06-evaluation.md §3](06-evaluation.md).
+
+---
+
+<div align="center">
+
+◀ Prev [01 · Overview](01-overview.md) · 🏠 [Docs home](../README.md) · Next ▶ [03 · Threat model](03-threat-model.md)
+
+</div>

@@ -1,8 +1,12 @@
 # 威胁模型与信任假设
 
-> **本篇定位**：讲清"为什么这样设计"——攻击者能力、STRIDE 威胁分类、信任假设 T1–T5、半去中心化的定义与合理性。
-> **读者**：深度轨。后接 [04-protocol-design.md](04-protocol-design.md)（机制）、[05-security-analysis.md](05-security-analysis.md)（S1–S5 论证）。
-> 论文来源：ch3.1、ch3.5、ch3.6。事实以源码为准。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：讲清"为什么这样设计"——攻击者能力、STRIDE 威胁分类、信任假设 T1–T5、半去中心化的定义与合理性。
+> - **读者**：深度轨。后接 [04-protocol-design.md](04-protocol-design.md)（机制）、[05-security-analysis.md](05-security-analysis.md)（S1–S5 论证）。
+> - **论文来源**：ch3.1、ch3.5、ch3.6。事实以源码为准。
+
+**目录**：[攻击者能力](#1-攻击者能力假设) · [STRIDE 分类](#2-stride-威胁分类) · [信任假设 T1–T5](#3-信任假设层次-t1t5) · [半去中心化定义](#4-半去中心化的定义与合理性) · [信任模型权衡](#5-信任模型权衡三类架构对比)
 
 ---
 
@@ -42,6 +46,7 @@
 | 商家拒付 | T1–T3 | —（经济） | 无需商家确认的自主释放 + 超时结算 + H_bind 账户绑定 | `payOrderByPlatform`、`sweepExpired*` |
 | 流动性耗尽 | T1 | —（经济） | 保证金没收 + 信誉动态调节 | `onTimeout`、`BondVault.settle` |
 
+> [!NOTE]
 > 重放多层防护在代码中体现为：会话去重 `usedSessionIds` + 平台层 `usedAlipayOrderIds`/`usedTransferIds` + 订单绑定 `orderBindingHash` + 支付时间窗下限。详见 [05-security-analysis.md §3](05-security-analysis.md)。
 
 ---
@@ -60,6 +65,7 @@
 
 **T2 与 T3 的组合安全边界**（论文 ch3.6.1 重点）：若 VS 与买方主动串谋，双方共持完整 TLS 会话密钥，密码学上等价于具备伪造受信 CA 证书的能力——这正是 T2 排除的更强困难前提。**故 T2、T3 互补：只要其一成立，纯串谋路径即在密码学意义下失效，S1 仍可保**。残余风险来自 MPC 实现层侧信道（时序/内存访问），属工程层考量（见 [06-evaluation.md §5](06-evaluation.md) 局限 5）。
 
+> [!NOTE]
 > 三类信任名单在代码中即 `trustedVerifiers`/`trustedKYBServers`/`trustedPaymentServers`（[TLSNVerifier.sol:41-44](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L41-L44)），由 admin 维护，对应 T3（验证器）与 T4（支付/KYB 服务器）的链上落地。
 
 ---
@@ -80,7 +86,8 @@
 2. **zkTLS 部署成熟度局限**：SNARK/STARK zkTLS 在消费级设备生成覆盖完整 TLS 握手的证明常需数十分钟，不满足交互式 C2C 的时延要求。**架构预留未来集成 zkTLS 的扩展接口**，性能达标即可平滑迁移到全去中心化。
 3. **信任最小化**：把对 VS 的信任压到「只需相信 VS 不与买方合谋伪造 PP 的 TLS 响应」这一最弱假设，与 Optimistic Rollup 对序列器的最小信任设计一脉相承。
 
-> 💡 这正呼应了 [04 §7](04-protocol-design.md) 与 [05 §4](05-security-analysis.md) 中**链上账户校验留空（为未来去中心化预留接口）**的设计意图：当前用链下 accountCheck 务实折中，待 zkTLS 成熟后可迁移上链。
+> [!TIP]
+> 这正呼应了 [04 §7](04-protocol-design.md) 与 [05 §4](05-security-analysis.md) 中**链上账户校验留空（为未来去中心化预留接口）**的设计意图：当前用链下 accountCheck 务实折中，待 zkTLS 成熟后可迁移上链。
 
 ---
 
@@ -101,4 +108,13 @@
 
 ---
 
+> [!TIP]
 > 订单状态集合 `Q = {PENDING, WAITING, COMPLETED, EXPIRED}`（[C2CTypes.sol:13-18](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L13-L18)）✓ 与论文 ch3:222 一致。机制如何兑现这些安全目标，见 [04-protocol-design.md](04-protocol-design.md) 与 [05-security-analysis.md](05-security-analysis.md)。
+
+---
+
+<div align="center">
+
+◀ 上一篇 [02 · zkTLS 与 TLSNotary](02-zktls-tlsnotary.md) · 🏠 [文档导航](../README.md) · 下一篇 ▶ [04 · 协议设计](04-protocol-design.md)
+
+</div>

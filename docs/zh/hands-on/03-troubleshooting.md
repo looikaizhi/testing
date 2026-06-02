@@ -1,8 +1,12 @@
 # 排错速查
 
-> **本篇定位**：降低劝退——常见报错、调试技巧、FAQ。
-> **读者**：动手轨。
-> 自定义错误源：[`C2CTypes.sol:108-194`](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194)。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：降低劝退——常见报错、调试技巧、FAQ。
+> - **读者**：动手轨。
+> - **自定义错误源**：[`C2CTypes.sol:108-194`](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194)。
+
+**目录**：[环境与启动](#1-环境与启动) · [revert 错误对照](#2-合约-revert-自定义错误对照) · [证明生成](#3-证明生成阶段) · [Gas 与链上](#4-gas-与链上) · [FAQ](#5-faq)
 
 ---
 
@@ -46,7 +50,8 @@
 | `UserBlacklisted` / `UserTemporarilyFrozen` | 风控黑名单 / 临时冻结期内 |
 | `ContractPaused` | 合约被 admin 暂停 |
 
-完整列表见 [C2CTypes.sol:108-194](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194)。
+> [!TIP]
+> 完整列表见 [C2CTypes.sol:108-194](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L108-L194)。
 
 ---
 
@@ -90,4 +95,13 @@ docker run -it --rm -p 55688:80 novnc/websockify 80 api.x.com:443
 
 ---
 
+> [!TIP]
 > 仍卡住？对照 [01-quickstart.md](01-quickstart.md) 的成功判据逐项排查；理解机制看 [deep-dive/](../deep-dive/01-overview.md)。
+
+---
+
+<div align="center">
+
+◀ 上一篇 [02 · 演示走查](02-demo-walkthrough.md) · 🏠 [文档导航](../README.md) · 🧠 [深度轨](../deep-dive/01-overview.md)
+
+</div>

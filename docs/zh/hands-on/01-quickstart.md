@@ -1,10 +1,13 @@
 # 快速上手：本地跑通最小闭环
 
-> **本篇定位**：在本机跑起本地链 + 合约 + 验证服务器 + 扩展 + dApp，零真实支付账号。
-> **读者**：动手轨。
-> **命令来源**：[`tlsn-extension/README.md`](../../../tlsn-extension/README.md)、[`packages/contracts/scripts/deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts)、各 `package.json`。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：在本机跑起本地链 + 合约 + 验证服务器 + 扩展 + dApp，零真实支付账号。
+> - **读者**：动手轨。
+> - **命令来源**：[`tlsn-extension/README.md`](../../../tlsn-extension/README.md)、[`packages/contracts/scripts/deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts)、各 `package.json`。
 
-> ⚠️ **本篇验证状态（如实标注）**：
+> [!WARNING]
+> **本篇验证状态（如实标注）**
 > - ✅ **已实跑核验**：`hardhat test` 合约测试（WSL，2026-06-02）—— **336 passing / 0 failing**。工具链：WSL 内 Node v24.10.0（nvm）、cargo 1.95（nightly）。
 > - ⏳ **命令源自已核验脚本**：完整 deploy + verifier + extension + web 端到端启动未在本轮逐条实跑（需 Rust 编译 + 浏览器加载扩展），命令取自上述脚本与官方 README，端口/产物已与源码核对一致。首次运行请以实际输出为准。
 
@@ -92,7 +95,8 @@ npm run dev          # 自动构建依赖 + webpack-dev-server（端口 3000）�
 
 在 Chrome 加载：`chrome://extensions/` → 开启「开发者模式」→「加载已解压的扩展程序」→ 选 `packages/extension/build/`。
 
-> ⚠️ 扩展版本须与 notary/验证器版本一致（见 [03-troubleshooting.md](03-troubleshooting.md)）。
+> [!WARNING]
+> 扩展版本须与 notary/验证器版本一致（见 [03-troubleshooting.md](03-troubleshooting.md)）。
 
 ## 6. 启动 C2C dApp
 
@@ -121,4 +125,13 @@ npm run dev          # = node scripts/start-dev.js，Next.js 默认端口 3001
 
 ---
 
+> [!TIP]
 > 跑不通？查 [03-troubleshooting.md](03-troubleshooting.md)。想看真实换汇全流程，看 [02-demo-walkthrough.md](02-demo-walkthrough.md)。想理解每步在干什么，看 [deep-dive/01-overview.md](../deep-dive/01-overview.md)。
+
+---
+
+<div align="center">
+
+🏠 [文档导航](../README.md) · 下一篇 ▶ [02 · 演示走查](02-demo-walkthrough.md)
+
+</div>

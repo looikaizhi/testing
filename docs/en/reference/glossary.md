@@ -1,7 +1,11 @@
 # Glossary
 
-> **Purpose**: a low-barrier term lookup. Each entry is 1–2 sentences + a pointer to the relevant deep-dive page. Definitions are consistent with the other pages and the code.
-> **Audience**: everyone.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: a low-barrier term lookup. Each entry is 1–2 sentences + a pointer to the relevant deep-dive page. Definitions are consistent with the other pages and the code.
+> - **Audience**: everyone.
+
+**Categories**: [Cryptography & zkTLS](#cryptography--zktls) · [Core protocol mechanisms](#core-protocol-mechanisms) · [Architecture & trust](#architecture--trust) · [Business & operations](#business--operations)
 
 ---
 
@@ -111,4 +115,13 @@ Rates are encoded `×1e8` (`RATE_PRECISION_EXP=8`); fiat amounts are passed at t
 
 ---
 
+> [!TIP]
 > For the source location of each concept, see [code-map.md](code-map.md).
+
+---
+
+<div align="center">
+
+🏠 [Docs home](../README.md) · 🗺 [Source map](code-map.md) · 🧠 [Deep-dive](../deep-dive/01-overview.md)
+
+</div>

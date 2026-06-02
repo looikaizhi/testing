@@ -1,8 +1,12 @@
 # 合约接口速查
 
-> **本篇定位**：想读或改合约的同学的速查手册——依赖关系、各合约关键函数/事件/权限、订单状态机、部署顺序。
-> **读者**：开发者。先读 [code-map.md](code-map.md) 建立全局，再用本篇查接口。
-> 合约源码在 [`tlsn-extension/packages/contracts/contracts/`](../../../tlsn-extension/packages/contracts/contracts/)，Solidity **0.8.28**、EVM cancun。所有事实以源码为准。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：想读或改合约的同学的速查手册——依赖关系、各合约关键函数/事件/权限、订单状态机、部署顺序。
+> - **读者**：开发者。先读 [code-map.md](code-map.md) 建立全局，再用本篇查接口。
+> - 合约源码在 [`tlsn-extension/packages/contracts/contracts/`](../../../tlsn-extension/packages/contracts/contracts/)，Solidity **0.8.28**、EVM cancun。所有事实以源码为准。
+
+**目录**：[依赖关系](#1-合约依赖关系) · [关键接口](#2-各合约关键接口) · [订单状态机](#3-订单状态机) · [部署顺序](#4-部署顺序与地址)
 
 ---
 
@@ -10,23 +14,21 @@
 
 部署后通过构造参数与 setter 互相接线（箭头 = 引用/调用方向）：
 
-```
-                     ┌──────────────┐
-                     │ TLSNVerifier │  证明核验 + 平台验证器注册表
-                     └──────┬───────┘
-            ┌───────────────┼────────────────────┐
-            │ (验证)         │ (注册)              │ (验证)
-   ┌────────┴───────┐  ┌────┴───────────────┐  ┌─┴──────────────┐
-   │   C2CAdmin     │  │ platforms/*Verifier│  │   C2CEscrow    │
-   │ 资产/商家/绑定 │  │ Alipay / Wise      │  │  订单主合约    │
-   └────────┬───────┘  └────────────────────┘  └─┬───────┬──────┘
-            │ (读配置)                            │       │ (调用)
-            └─────────────────────────────────────┘       │
-                            ┌────────────────────┬─────────┘
-                   ┌────────┴───────┐   ┌────────┴────────┐
-                   │ C2CRiskManager │   │  C2CBondVault   │
-                   │ 保证金率/信誉  │   │  保证金托管/结算│
-                   └────────────────┘   └─────────────────┘
+```mermaid
+flowchart TB
+    V["TLSNVerifier<br/>证明核验 + 平台验证器注册表"]
+    E["C2CEscrow<br/>订单主合约"]
+    A["C2CAdmin<br/>资产 / 商家 / 绑定"]
+    P["platforms/*Verifier<br/>Alipay / Wise"]
+    R["C2CRiskManager<br/>保证金率 / 信誉"]
+    B["C2CBondVault<br/>保证金托管 / 结算"]
+
+    E -->|验证| V
+    V -->|注册| P
+    A -->|验证| V
+    E -->|读配置| A
+    E -->|调用| R
+    E -->|调用| B
 ```
 
 - `C2CEscrow` 是协议主干，持有对 `C2CAdmin`/`TLSNVerifier`/`C2CRiskManager`/`C2CBondVault` 的引用（[C2CEscrow.sol:36-39](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L36-L39)）。
@@ -53,7 +55,8 @@
 | `cleanupProductExpired` | [:591](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L591) | 任意 | 单产品有界清理 |
 | `cancelOrder` | [:601](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L601) | — | **已禁用**，直接 revert `OrderCancellationDisabled` |
 
-> 💡 `sweepExpired*` 位于「Public Sweep (anyone-callable)」段，仅 `whenNotPaused nonReentrant`、**无权限修饰符**——任何人都能触发过期清理。链下 [keeper](../../../tlsn-extension/packages/keeper/) 只是便利角色，不掌握特权。这是去中心化论证的一环（见 [03-threat-model.md](../deep-dive/03-threat-model.md)）。
+> [!TIP]
+> `sweepExpired*` 位于「Public Sweep (anyone-callable)」段，仅 `whenNotPaused nonReentrant`、**无权限修饰符**——任何人都能触发过期清理。链下 [keeper](../../../tlsn-extension/packages/keeper/) 只是便利角色，不掌握特权。这是去中心化论证的一环（见 [03-threat-model.md](../deep-dive/03-threat-model.md)）。
 
 **内部关键逻辑**
 
@@ -64,7 +67,8 @@
 | `_orderKey` | [:431-440](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L431-L440) | 6 字段保证金隔离键 |
 | `_computeFiatAmountX1000` | [:250-259](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L250-L259) | 法币金额 ×1000；汇率精度 `RATE_PRECISION_EXP=8` |
 
-> 💡 核验时构造的 `paramsData` 含 4 个字段（含 `orderCreationTime = deadline - ORDER_TIMEOUT`，[:633-637](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L633-L637)），支付时间须落在 `[创建时间, 截止时间]` 窗口内，防止旧/过期转账复用。
+> [!TIP]
+> 核验时构造的 `paramsData` 含 4 个字段（含 `orderCreationTime = deadline - ORDER_TIMEOUT`，[:633-637](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L633-L637)），支付时间须落在 `[创建时间, 截止时间]` 窗口内，防止旧/过期转账复用。
 
 **事件**：`ProductListed`([:114](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L114))、`ProductStatusChanged`、`ProductCollateralChanged`、`OrderPlaced`([:138](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L138))、`BuyerPaymentInfoSet`、`OrderStatusChanged`([:156](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L156))、`BuyerEscrowDeposited`、`OrderProofLinked`、`Paused`/`Unpaused`、`ExpiredSwept`([:183](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L183))。
 
@@ -109,8 +113,8 @@
 | `rewardCompletedThreshold` | 10 | 完成数达此值且风险归零→降至下限 |
 | `decayIntervalDays` | 90 | 风险等级衰减周期 |
 
-> 💡 L=10 时 `raw = 1000 + 10×300 = 4000 bps = 40%`（未触 100% 上限，上限为可调极端值）。
-> 提示：演示部署脚本 [`deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L393-L403) 会把 `freeze=3, decay=1` 等改为演示值——那是部署时配置，非合约默认。
+> [!TIP]
+> L=10 时 `raw = 1000 + 10×300 = 4000 bps = 40%`（未触 100% 上限，上限为可调极端值）。演示部署脚本 [`deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L393-L403) 会把 `freeze=3, decay=1` 等改为演示值——那是部署时配置，非合约默认。
 
 | 函数 | 行 | 权限 | 说明 |
 |---|---|---|---|
@@ -132,7 +136,8 @@
 | `claim(token)` | [:126](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L126) | 任意 | **pull 领取**已结算保证金 |
 | `claimableBalance` / `initClaimable` | [:135](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L135) / [:120](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L120) | view / 任意 | 查可领余额 / 预热哨兵位省 gas |
 
-> 💡 结算为 **pull 模式**——保证金先 `_credit` 进 `_claimable`，用户须自行 `claim()` 取回；`initClaimable` 写哨兵值 1 保持存储槽 warm（冷写 20000 gas→热写 2900 gas）。
+> [!TIP]
+> 结算为 **pull 模式**——保证金先 `_credit` 进 `_claimable`，用户须自行 `claim()` 取回；`initClaimable` 写哨兵值 1 保持存储槽 warm（冷写 20000 gas→热写 2900 gas）。
 
 ### 2.5 `C2CAdmin`（配置中心）
 
@@ -186,4 +191,13 @@
 
 产物地址写入 [`deployments/web-31337.json`](../../../tlsn-extension/packages/contracts/deployments/web-31337.json)（keeper 与前端从此读取地址与 `deploymentBlock`）与 `packages/web/.env.local`。
 
+> [!TIP]
 > 实跑部署见 [hands-on/01-quickstart.md](../hands-on/01-quickstart.md)。接入新支付平台见 [verifier-plugin.md](verifier-plugin.md)。
+
+---
+
+<div align="center">
+
+🏠 [文档导航](../README.md) · 📚 [源码地图](code-map.md) · 🔌 [验证器与插件](verifier-plugin.md) · 🧠 [协议设计](../deep-dive/04-protocol-design.md)
+
+</div>

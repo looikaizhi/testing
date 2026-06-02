@@ -22,6 +22,7 @@ On top of the upstream foundation, the **C2C (consumer-to-consumer) fiat ↔ cry
 | [`tlsn-extension/packages/keeper`](../../tlsn-extension/packages/keeper/) | the on-chain timeout-settlement keeper |
 | C2C extensions to `tlsn-extension/packages/verifier`, `packages/demo` | C2C-specific logic in the verifier server (accountCheck/signing/Webhook, etc.) |
 
+> [!NOTE]
 > Cross-checked against the upstream `docs/ATTRIBUTION.md`: the contracts/web/keeper packages + the C2C extensions to verifier/demo are this work's contribution.
 
 These contributions are © 2026 looikaizhi, released under the same **Apache-2.0 OR MIT** dual license as the upstream project.
@@ -38,3 +39,11 @@ Please do not squash or rewrite history, so that this attribution stays intact.
 ## Acknowledgements
 
 Thanks to the TLSNotary / PSE team (@0xtsukino, @hendrikeeckhaut, @mhchia, and the other contributors), whose work made it possible to focus on the C2C protocol design.
+
+---
+
+<div align="center">
+
+🏠 [Docs home](README.md) · 📄 [Thesis info](thesis.md)
+
+</div>

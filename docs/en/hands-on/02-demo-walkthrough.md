@@ -1,10 +1,13 @@
 # Demo Walkthrough: the Full Exchange Flow
 
-> **Purpose**: walk through one complete exchange in the author's real environment as a reference (most readers cannot reproduce a real Alipay/Wise payment).
-> **Audience**: hands-on track.
-> **Sources**: contract functions/events (`packages/contracts`) + deployment seed data ([deploy-web.ts](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts)).
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: walk through one complete exchange in the author's real environment as a reference (most readers cannot reproduce a real Alipay/Wise payment).
+> - **Audience**: hands-on track.
+> - **Sources**: contract functions/events (`packages/contracts`) + deployment seed data ([deploy-web.ts](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts)).
 
-> ⚠️ **Verification status**: the **contract functions and events** in this page are cross-checked against the source; **screenshots/recordings are placeholders** (`docs/assets/screenshots/`, `docs/assets/demo/`, to be captured by the author in the real environment). The full real exchange flow needs a real Alipay/Wise account and cannot be reproduced in an automated environment.
+> [!WARNING]
+> **Verification status**: the **contract functions and events** in this page are cross-checked against the source; **screenshots/recordings are placeholders** (`docs/assets/screenshots/`, `docs/assets/demo/`, to be captured by the author in the real environment). The full real exchange flow needs a real Alipay/Wise account and cannot be reproduced in an automated environment.
 
 ---
 
@@ -33,8 +36,10 @@ Done automatically by the deploy script (in production, done by the admin manual
 | Trust verifier/payment server | `TLSNVerifier.addTrustedVerifier`/`addTrustedPaymentServer` ([:119](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L119)/[:139](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L139)) | `TrustedVerifierAdded`/`TrustedPaymentServerAdded` |
 | Register platform verifier | `TLSNVerifier.setPlatformVerifier` ([:154](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L154)) | `PlatformVerifierSet` |
 
+> [!NOTE]
 > Default trusted payment servers: `wise.com`, `mbillexprod.alipay.com` ([deploy-web.ts:406](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L406)).
-> Screenshot placeholder: `docs/assets/screenshots/01-admin-console.png`
+
+<!-- TODO(screenshot): docs/assets/screenshots/01-admin-console.png — admin console -->
 
 ## ② Merchant onboarding & listing
 
@@ -46,8 +51,10 @@ Done automatically by the deploy script (in production, done by the admin manual
 | Publish rate (×1e8 encoded) | `C2CAdmin.publishRate` ([:308](../../../tlsn-extension/packages/contracts/contracts/C2CAdmin.sol#L308)) | `RatePublished` |
 | Open for business | `C2CAdmin.openNow` ([:343](../../../tlsn-extension/packages/contracts/contracts/C2CAdmin.sol#L343)) | `ManualOverrideSet` |
 
+> [!NOTE]
 > The account binding on-chain is `nameHash`/`idHash` (keccak256 commitments); plaintext + random salt live in the off-chain DB. For Alipay, because the proof reveals only the **masked** identity, the binding commits over the masked value. See [deep-dive/05 §4](../deep-dive/05-security-analysis.md).
-> Screenshot placeholder: `docs/assets/screenshots/02-merchant-listing.png`
+
+<!-- TODO(screenshot): docs/assets/screenshots/02-merchant-listing.png — merchant listing -->
 
 ## ③ Buyer places order & locks on-chain
 
@@ -58,8 +65,10 @@ Done automatically by the deploy script (in production, done by the admin manual
 
 Inside `placeOrder` (CRYPTO branch): query `requiredBondBps` → buyer pays bond into BondVault ([:503-528](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L503-L528)) → mark `pendingAmount` on the merchant's collateral → compute the 15-field `H_bind` ([:381-413](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L381-L413)) → order initial state **PENDING**, deadline = now + 15 minutes.
 
+> [!NOTE]
 > Pre-checks: self-trade forbidden `SelfTradeNotAllowed`, buyer must bind a payment account first `BuyerBindingNotSet`, per-order USD cap `ExceedsUsdCap`, business hours `MerchantClosed`.
-> Screenshot placeholder: `docs/assets/screenshots/03-place-order.png`
+
+<!-- TODO(screenshot): docs/assets/screenshots/03-place-order.png — buyer places order -->
 
 ## ④ Real payment + proof generation
 
@@ -70,7 +79,8 @@ Inside `placeOrder` (CRYPTO branch): query `requiredBondBps` → buyer pays bond
 | VS verifies the account off-chain (accountCheck) + signs (incl. H_bind) | [`verifier`](../../../tlsn-extension/packages/verifier/) |
 
 The output = the proof tuple `π = (σ_VS, {cᵢ}, H_bind, sid)`. For the principles, see [deep-dive/02-zktls-tlsnotary.md](../deep-dive/02-zktls-tlsnotary.md).
-> Recording placeholder: `docs/assets/demo/04-proof-generation.gif`
+
+<!-- TODO(recording): docs/assets/demo/04-proof-generation.gif — proof generation -->
 
 ## ⑤ On-chain verification & settlement
 
@@ -80,10 +90,20 @@ The output = the proof tuple `π = (σ_VS, {cᵢ}, H_bind, sid)`. For the princi
 
 Internally: `verifyAndDelegate` (five-step cryptographic verification + delegate the business check to the Alipay verifier) → on success, release USDT to the buyer, refund the buyer's bond (pull, needs `claim()`), notify RiskManager `onCompleted`.
 
-> The FIAT product is symmetric: the merchant pays fiat → `receiveCryptoWithPlatformPayment` ([:670](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L670)).
-> If the buyer times out without submitting a proof → anyone can `sweepExpired*` to clean up → state EXPIRED, bond goes to the merchant.
-> Screenshot placeholder: `docs/assets/screenshots/05-settlement.png`
+> [!NOTE]
+> The FIAT product is symmetric: the merchant pays fiat → `receiveCryptoWithPlatformPayment` ([:670](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L670)). If the buyer times out without submitting a proof → anyone can `sweepExpired*` to clean up → state EXPIRED, bond goes to the merchant.
+
+<!-- TODO(screenshot): docs/assets/screenshots/05-settlement.png — on-chain settlement -->
 
 ---
 
+> [!TIP]
 > For the design principles behind each step, see [deep-dive/04-protocol-design.md](../deep-dive/04-protocol-design.md); for contract interfaces, see [reference/contracts.md](../reference/contracts.md); if stuck, see [03-troubleshooting.md](03-troubleshooting.md).
+
+---
+
+<div align="center">
+
+◀ Prev [01 · Quickstart](01-quickstart.md) · 🏠 [Docs home](../README.md) · Next ▶ [03 · Troubleshooting](03-troubleshooting.md)
+
+</div>

@@ -1,9 +1,13 @@
 # 评估：实测数据
 
-> **本篇定位**：用实测数据说服人——合约正确性、链上 Gas 经济性、TLSNotary 性能、端到端时延。
-> **读者**：深度轨 / 评审。
-> **数据来源**：合约测试 [`contracts/TEST_RESULT.md`](../../../tlsn-extension/packages/contracts/TEST_RESULT.md)；实验数据 [`data_analysis/`](../../../data_analysis/)（`*.csv` 源、`*.svg` 图）。
-> **复算原则**：本篇所有数值均回源数据（CSV / 测试输出 / 合约常量）现场复算。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：用实测数据说服人——合约正确性、链上 Gas 经济性、TLSNotary 性能、端到端时延。
+> - **读者**：深度轨 / 评审。
+> - **数据来源**：合约测试 [`contracts/TEST_RESULT.md`](../../../tlsn-extension/packages/contracts/TEST_RESULT.md)；实验数据 [`data_analysis/`](../../../data_analysis/)（`*.csv` 源、`*.svg` 图）。
+> - **复算原则**：本篇所有数值均回源数据（CSV / 测试输出 / 合约常量）现场复算。
+
+**目录**：[合约正确性](#1-合约功能正确性) · [Gas 与经济性](#2-链上-gas-与经济性) · [TLSNotary 性能](#3-tlsnotary-协议性能) · [端到端时延](#4-端到端业务时延) · [局限性](#5-局限性论文-ch65)
 
 ---
 
@@ -25,7 +29,8 @@
 
 用例按 `FLOW`（正向）/`ERR`（错误路径）/`ATT`（攻击向量）/`TAMPER`（时序篡改）四类组织，覆盖状态机转换、资产守恒、五步密码学校验流水线（订单绑定哈希替换、会话重放、签名伪造、链 ID 替换、金额篡改均按预期 revert）。
 
-> 💡 测试套件持续增长（合约逻辑迭代会新增用例），实跑数字以本机 `hardhat test` 输出为准。其中 TLSN 验证器套件含「5-item 签名格式通过、旧版 4-item 被 `UntrustedVerifier` 拒绝」用例，印证当前签名摘要为 5 字段（含 `orderBindingHash`、`policyVersionHash`）。
+> [!TIP]
+> 测试套件持续增长（合约逻辑迭代会新增用例），实跑数字以本机 `hardhat test` 输出为准。其中 TLSN 验证器套件含「5-item 签名格式通过、旧版 4-item 被 `UntrustedVerifier` 拒绝」用例，印证当前签名摘要为 5 字段（含 `orderBindingHash`、`policyVersionHash`）。
 
 ---
 
@@ -80,7 +85,8 @@ $$\text{总手续费(USD)} = \text{Gas Used} \times \text{Gas Price(gwei)} \time
 
 典型换汇金额 100–10,000 USDT，均值档手续费占比 0.001%–0.13%，远低于主流中心化交易所提币定额（约 1–3 USDT）。
 
-> 注：以上为执行 Gas，不含 L1 数据费。Dencun（EIP-4844）后 Arbitrum L1 数据费典型 \$0.001–\$0.02，占比可忽略。
+> [!NOTE]
+> 以上为执行 Gas，不含 L1 数据费。Dencun（EIP-4844）后 Arbitrum L1 数据费典型 \$0.001–\$0.02，占比可忽略。
 
 ---
 
@@ -99,6 +105,7 @@ $$\text{总手续费(USD)} = \text{Gas Used} \times \text{Gas Price(gwei)} \time
 | **响应体**（1–50 KB） | 原生近线性；浏览器在 5–10 KB 后非线性抬升（50 KB 时 23.5s，达原生 2.33 倍）。本系统 API 响应 2–5 KB，处拐点以下平稳区 | [response_size.svg](../../assets/charts/response_size.svg) |
 | **披露比例**（10%–100%） | 影响最小（全区间增幅约 10%–11%）。本系统披露率 20%–35%，处完全平坦区 | [proof_reveal.svg](../../assets/charts/proof_reveal.svg) |
 
+> [!TIP]
 > 关键洞察：**带宽是首要瓶颈**，披露比例影响最小——这意味着选择性披露（隐私保护）几乎不增加时延成本。
 
 ---
@@ -114,6 +121,8 @@ $$\text{总手续费(USD)} = \text{Gas Used} \times \text{Gas Price(gwei)} \time
 源数据：[`data_analysis/wise_alipay/`](../../../data_analysis/wise_alipay/)（`*_ideal/broadband/crossregion/4g.csv`）。
 
 ### 4.2 结果（中位数，N=19）
+
+![端到端总耗时对比](../../assets/charts/wise_alipay_total_time.svg)
 
 ![端到端阶段拆解](../../assets/charts/wise_alipay_phase_breakdown.svg)
 
@@ -152,8 +161,18 @@ $$\text{总手续费(USD)} = \text{Gas Used} \times \text{Gas Price(gwei)} \time
 | 4 | 平台 API 变更适配成本 | API 变更需双层适配（插件 + 链上验证器），后者经治理流程，响应滞后 | `platforms/*.sol` |
 | 5 | 公证节点与买方串谋边界 | T3 建模为「诚实但好奇」；纯串谋在 T2/T3 至少一成立时失效；侧信道漏洞 + bondBps 参数敏感性是残余风险 | 见 [05-security-analysis.md](05-security-analysis.md) |
 
+> [!NOTE]
 > 局限 2「无盐哈希」与 [05-security-analysis.md](05-security-analysis.md) 的账户隐私分析相呼应；建议方案：以 `H(accountId ‖ orderId ‖ chainId)` 派生盐绑定每笔订单。
 
 ---
 
+> [!TIP]
 > 设计如何支撑这些结果，见 [04-protocol-design.md](04-protocol-design.md)；安全目标论证见 [05-security-analysis.md](05-security-analysis.md)。所有图片源自 [`data_analysis/*.svg`](../../../data_analysis/)，与 `*.csv` 源数据一致。
+
+---
+
+<div align="center">
+
+◀ 上一篇 [05 · 安全分析](05-security-analysis.md) · 🏠 [文档导航](../README.md) · 📚 [源码地图](../reference/code-map.md)
+
+</div>

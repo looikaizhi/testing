@@ -22,6 +22,7 @@ TLSNotary 扩展提供了**基于浏览器的 TLS 证明生成基础**——正�
 | [`tlsn-extension/packages/keeper`](../../tlsn-extension/packages/keeper/) | 链上超时结算 keeper |
 | `tlsn-extension/packages/verifier`、`packages/demo` 的 C2C 扩展 | 验证服务器的账户核验/签名/Webhook 等 C2C 特定逻辑 |
 
+> [!NOTE]
 > 与上游 `docs/ATTRIBUTION.md` 核对一致：合约/web/keeper 三包 + verifier/demo 的 C2C 扩展为本文贡献。
 
 这些贡献 © 2026 looikaizhi，并以与上游**相同的 Apache-2.0 OR MIT 双许可**发布。
@@ -38,3 +39,11 @@ TLSNotary 扩展提供了**基于浏览器的 TLS 证明生成基础**——正�
 ## 致谢
 
 感谢 TLSNotary / PSE 团队（@0xtsukino、@hendrikeeckhaut、@mhchia 等贡献者）的工作，使本文得以专注于 C2C 协议设计。
+
+---
+
+<div align="center">
+
+🏠 [文档导航](README.md) · 📄 [论文信息](thesis.md)
+
+</div>

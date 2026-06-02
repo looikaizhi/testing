@@ -1,8 +1,12 @@
 # Contracts Quick Reference
 
-> **Purpose**: a cheat-sheet for anyone reading or modifying the contracts — dependencies, key functions/events/permissions per contract, the order state machine, deployment order.
-> **Audience**: developers. Read [code-map.md](code-map.md) first for the big picture, then use this page to look up interfaces.
-> Contract source is in [`tlsn-extension/packages/contracts/contracts/`](../../../tlsn-extension/packages/contracts/contracts/), Solidity **0.8.28**, EVM cancun. All facts follow the source.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: a cheat-sheet for anyone reading or modifying the contracts — dependencies, key functions/events/permissions per contract, the order state machine, deployment order.
+> - **Audience**: developers. Read [code-map.md](code-map.md) first for the big picture, then use this page to look up interfaces.
+> - Contract source is in [`tlsn-extension/packages/contracts/contracts/`](../../../tlsn-extension/packages/contracts/contracts/), Solidity **0.8.28**, EVM cancun. All facts follow the source.
+
+**Contents**: [Dependencies](#1-contract-dependencies) · [Key interfaces](#2-key-interfaces-per-contract) · [Order state machine](#3-order-state-machine) · [Deployment order](#4-deployment-order--addresses)
 
 ---
 
@@ -10,25 +14,21 @@
 
 After deployment, contracts are wired via constructor args and setters (arrows = reference/call direction):
 
-```
-                     ┌──────────────┐
-                     │ TLSNVerifier │  proof verification + platform-verifier registry
-                     └──────┬───────┘
-            ┌───────────────┼────────────────────┐
-            │ (verify)       │ (register)          │ (verify)
-   ┌────────┴───────┐  ┌────┴───────────────┐  ┌─┴──────────────┐
-   │   C2CAdmin     │  │ platforms/*Verifier│  │   C2CEscrow    │
-   │ assets/merchant│  │ Alipay / Wise      │  │  main order    │
-   │ /bindings      │  │                    │  │  contract      │
-   └────────┬───────┘  └────────────────────┘  └─┬───────┬──────┘
-            │ (read config)                       │       │ (call)
-            └─────────────────────────────────────┘       │
-                            ┌────────────────────┬─────────┘
-                   ┌────────┴───────┐   ┌────────┴────────┐
-                   │ C2CRiskManager │   │  C2CBondVault   │
-                   │ bond rate/rep  │   │ bond custody/   │
-                   │                │   │ settlement      │
-                   └────────────────┘   └─────────────────┘
+```mermaid
+flowchart TB
+    V["TLSNVerifier<br/>proof verification + platform-verifier registry"]
+    E["C2CEscrow<br/>main order contract"]
+    A["C2CAdmin<br/>assets / merchant / bindings"]
+    P["platforms/*Verifier<br/>Alipay / Wise"]
+    R["C2CRiskManager<br/>bond rate / reputation"]
+    B["C2CBondVault<br/>bond custody / settlement"]
+
+    E -->|verify| V
+    V -->|register| P
+    A -->|verify| V
+    E -->|read config| A
+    E -->|call| R
+    E -->|call| B
 ```
 
 - `C2CEscrow` is the protocol backbone, holding references to `C2CAdmin`/`TLSNVerifier`/`C2CRiskManager`/`C2CBondVault` ([C2CEscrow.sol:36-39](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L36-L39)).
@@ -55,7 +55,8 @@ Source: [C2CEscrow.sol](../../../tlsn-extension/packages/contracts/contracts/C2C
 | `cleanupProductExpired` | [:591](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L591) | any | Bounded per-product cleanup |
 | `cancelOrder` | [:601](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L601) | — | **Disabled**, reverts with `OrderCancellationDisabled` |
 
-> 💡 `sweepExpired*` are in the "Public Sweep (anyone-callable)" section with only `whenNotPaused nonReentrant` and **no permission modifier** — anyone can trigger expiry cleanup. The off-chain [keeper](../../../tlsn-extension/packages/keeper/) is merely a convenience and holds no privilege. This is part of the decentralization argument (see [03-threat-model.md](../deep-dive/03-threat-model.md)).
+> [!TIP]
+> `sweepExpired*` are in the "Public Sweep (anyone-callable)" section with only `whenNotPaused nonReentrant` and **no permission modifier** — anyone can trigger expiry cleanup. The off-chain [keeper](../../../tlsn-extension/packages/keeper/) is merely a convenience and holds no privilege. This is part of the decentralization argument (see [03-threat-model.md](../deep-dive/03-threat-model.md)).
 
 **Key internal logic**
 
@@ -66,7 +67,8 @@ Source: [C2CEscrow.sol](../../../tlsn-extension/packages/contracts/contracts/C2C
 | `_orderKey` | [:431-440](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L431-L440) | 6-field bond isolation key |
 | `_computeFiatAmountX1000` | [:250-259](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L250-L259) | Fiat amount ×1000; rate precision `RATE_PRECISION_EXP=8` |
 
-> 💡 The `paramsData` built during verification has 4 fields (incl. `orderCreationTime = deadline - ORDER_TIMEOUT`, [:633-637](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L633-L637)); the payment time must fall within the `[creationTime, deadline]` window, preventing reuse of old/expired transfers.
+> [!TIP]
+> The `paramsData` built during verification has 4 fields (incl. `orderCreationTime = deadline - ORDER_TIMEOUT`, [:633-637](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L633-L637)); the payment time must fall within the `[creationTime, deadline]` window, preventing reuse of old/expired transfers.
 
 **Events**: `ProductListed`([:114](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L114)), `ProductStatusChanged`, `ProductCollateralChanged`, `OrderPlaced`([:138](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L138)), `BuyerPaymentInfoSet`, `OrderStatusChanged`([:156](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L156)), `BuyerEscrowDeposited`, `OrderProofLinked`, `Paused`/`Unpaused`, `ExpiredSwept`([:183](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L183)).
 
@@ -111,8 +113,8 @@ Source: [C2CRiskManager.sol](../../../tlsn-extension/packages/contracts/contract
 | `rewardCompletedThreshold` | 10 | Completions at which, with zero risk, the rate drops to the floor |
 | `decayIntervalDays` | 90 | Risk-level decay interval |
 
-> 💡 At L=10, `raw = 1000 + 10×300 = 4000 bps = 40%` (does not hit the 100% cap; the cap is an adjustable extreme value).
-> Note: the demo deploy script [`deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L393-L403) overrides `freeze=3, decay=1` etc. with demo values — those are deploy-time config, not contract defaults.
+> [!TIP]
+> At L=10, `raw = 1000 + 10×300 = 4000 bps = 40%` (does not hit the 100% cap; the cap is an adjustable extreme value). The demo deploy script [`deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L393-L403) overrides `freeze=3, decay=1` etc. with demo values — those are deploy-time config, not contract defaults.
 
 | Function | Line | Permission | Description |
 |---|---|---|---|
@@ -134,7 +136,8 @@ Source: [C2CBondVault.sol](../../../tlsn-extension/packages/contracts/contracts/
 | `claim(token)` | [:126](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L126) | any | **Pull-withdraw** a settled bond |
 | `claimableBalance` / `initClaimable` | [:135](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L135) / [:120](../../../tlsn-extension/packages/contracts/contracts/C2CBondVault.sol#L120) | view / any | Query claimable / warm up the sentinel slot to save gas |
 
-> 💡 Settlement is **pull-mode** — the bond is `_credit`ed to `_claimable` first, and the user must call `claim()` to withdraw; `initClaimable` writes sentinel value 1 to keep the storage slot warm (cold write 20000 gas → warm write 2900 gas).
+> [!TIP]
+> Settlement is **pull-mode** — the bond is `_credit`ed to `_claimable` first, and the user must call `claim()` to withdraw; `initClaimable` writes sentinel value 1 to keep the storage slot warm (cold write 20000 gas → warm write 2900 gas).
 
 ### 2.5 `C2CAdmin` (config hub)
 
@@ -150,6 +153,7 @@ Source: [C2CAdmin.sol](../../../tlsn-extension/packages/contracts/contracts/C2CA
 | `setBusinessHours` / `openNow` / `closeNow` / `clearManualOverride` | [:325](../../../tlsn-extension/packages/contracts/contracts/C2CAdmin.sol#L325)+ | merchant | Business hours and manual toggles |
 | `setMaxOrderAmount` | [:394](../../../tlsn-extension/packages/contracts/contracts/C2CAdmin.sol#L394) | `onlyAdmin` | Per-order cap, default `1000 × 1e18` (18-decimal normalized, equals 1000 whole tokens) |
 
+> [!NOTE]
 > Account privacy: `setPlatformBinding` writes the `nameHash`/`idHash` commitments on-chain ([:264-278](../../../tlsn-extension/packages/contracts/contracts/C2CAdmin.sol#L264-L278)); plaintext and random salt live only in the off-chain database. For Alipay, because the proof reveals the **masked** payee identity, the binding commits over the **masked value** (see [`deploy-web.ts:44-61`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts#L44-L61)). See [05-security-analysis.md](../deep-dive/05-security-analysis.md).
 
 ---
@@ -166,6 +170,7 @@ State set `Q = {PENDING, WAITING, COMPLETED, EXPIRED}` ([C2CTypes.sol:13-18](../
 | `WAITING` | Merchant payment proof verified | `COMPLETED` | `receiveCryptoWithPlatformPayment` |
 | `PENDING`/`WAITING` | Past `deadline` (15 minutes) | `EXPIRED` | `sweepExpired*` / `cleanupProductExpired` (anyone can call) |
 
+> [!NOTE]
 > Full transitions and bond ownership are in [04-protocol-design.md](../deep-dive/04-protocol-design.md).
 
 ---
@@ -188,4 +193,13 @@ State set `Q = {PENDING, WAITING, COMPLETED, EXPIRED}` ([C2CTypes.sol:13-18](../
 
 Addresses are written to [`deployments/web-31337.json`](../../../tlsn-extension/packages/contracts/deployments/web-31337.json) (the keeper and frontend read addresses and `deploymentBlock` from here) and `packages/web/.env.local`.
 
+> [!TIP]
 > For a live deployment run, see [hands-on/01-quickstart.md](../hands-on/01-quickstart.md). To add a new payment platform, see [verifier-plugin.md](verifier-plugin.md).
+
+---
+
+<div align="center">
+
+🏠 [Docs home](../README.md) · 📚 [Source map](code-map.md) · 🔌 [Verifier & plugins](verifier-plugin.md) · 🧠 [Protocol design](../deep-dive/04-protocol-design.md)
+
+</div>

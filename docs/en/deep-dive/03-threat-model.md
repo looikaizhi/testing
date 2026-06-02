@@ -1,8 +1,12 @@
 # Threat Model & Trust Assumptions
 
-> **Purpose**: explains "why it is designed this way" — adversary capabilities, STRIDE threat classification, trust assumptions T1–T5, and the definition & rationale of semi-decentralization.
-> **Audience**: deep-dive track. Followed by [04-protocol-design.md](04-protocol-design.md) (mechanisms), [05-security-analysis.md](05-security-analysis.md) (S1–S5 argument).
-> Thesis source: ch3.1, ch3.5, ch3.6. All facts follow the source.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: explains "why it is designed this way" — adversary capabilities, STRIDE threat classification, trust assumptions T1–T5, and the definition & rationale of semi-decentralization.
+> - **Audience**: deep-dive track. Followed by [04-protocol-design.md](04-protocol-design.md) (mechanisms), [05-security-analysis.md](05-security-analysis.md) (S1–S5 argument).
+> - **Thesis source**: ch3.1, ch3.5, ch3.6. All facts follow the source.
+
+**Contents**: [Adversary capabilities](#1-adversary-capability-assumptions) · [STRIDE](#2-stride-threat-classification) · [Trust assumptions T1–T5](#3-trust-assumption-hierarchy-t1t5) · [Semi-decentralization](#4-definition--rationale-of-semi-decentralization) · [Trust-model trade-offs](#5-trust-model-trade-offs-three-architectures-compared)
 
 ---
 
@@ -42,6 +46,7 @@ All adversaries are modeled as **Probabilistic Polynomial-Time (PPT)** algorithm
 | Merchant non-payment | T1–T3 | — (economic) | Self-service release without merchant confirmation + timeout settlement + H_bind account binding | `payOrderByPlatform`, `sweepExpired*` |
 | Liquidity exhaustion | T1 | — (economic) | Bond forfeiture + dynamic reputation adjustment | `onTimeout`, `BondVault.settle` |
 
+> [!NOTE]
 > Multi-layer replay protection in code: session dedup `usedSessionIds` + platform-level `usedAlipayOrderIds`/`usedTransferIds` + order binding `orderBindingHash` + payment-time lower bound. See [05-security-analysis.md §3](05-security-analysis.md).
 
 ---
@@ -60,6 +65,7 @@ Five mutually independent assumptions (thesis ch3.6.1), covering the blockchain,
 
 **The combined security boundary of T2 and T3** (thesis ch3.6.1 highlight): if the VS actively colludes with the buyer, the two jointly hold the full TLS session key, which is cryptographically equivalent to being able to forge a trusted-CA-issued certificate — exactly the stronger hardness premise that T2 rules out. **So T2 and T3 are complementary: as long as either holds, the pure-collusion path fails cryptographically and S1 still holds.** The residual risk comes from MPC-implementation side channels (timing / memory-access), an engineering-layer concern (see [06-evaluation.md §5](06-evaluation.md) limitation 5).
 
+> [!NOTE]
 > The three trust lists in code are `trustedVerifiers`/`trustedKYBServers`/`trustedPaymentServers` ([TLSNVerifier.sol:41-44](../../../tlsn-extension/packages/contracts/contracts/TLSNVerifier.sol#L41-L44)), maintained by the admin, realizing T3 (verifier) and T4 (payment/KYB servers) on-chain.
 
 ---
@@ -80,7 +86,8 @@ Five mutually independent assumptions (thesis ch3.6.1), covering the blockchain,
 2. **zkTLS deployment maturity limits**: SNARK/STARK zkTLS on consumer devices often takes tens of minutes to generate a proof covering the full TLS handshake, failing the latency requirement of interactive C2C. **The architecture reserves an interface to integrate zkTLS in the future**, allowing a smooth migration to full decentralization once performance is adequate.
 3. **Trust minimization**: it compresses trust in the VS down to "only trust that the VS does not collude with the buyer to forge the PP's TLS response," the weakest assumption — in the same spirit as Optimistic Rollup's minimal trust in the sequencer.
 
-> 💡 This echoes the design intent in [04 §7](04-protocol-design.md) and [05 §4](05-security-analysis.md) of **leaving the on-chain account check empty (an entry reserved for future decentralization)**: today an off-chain accountCheck is the pragmatic compromise, to be migrated on-chain once zkTLS matures.
+> [!TIP]
+> This echoes the design intent in [04 §7](04-protocol-design.md) and [05 §4](05-security-analysis.md) of **leaving the on-chain account check empty (an entry reserved for future decentralization)**: today an off-chain accountCheck is the pragmatic compromise, to be migrated on-chain once zkTLS matures.
 
 ---
 
@@ -101,4 +108,13 @@ Under the constraint that pure-decentralized zkTLS latency is not yet practical,
 
 ---
 
+> [!TIP]
 > Order state set `Q = {PENDING, WAITING, COMPLETED, EXPIRED}` ([C2CTypes.sol:13-18](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L13-L18)). How the mechanisms deliver these security goals: see [04-protocol-design.md](04-protocol-design.md) and [05-security-analysis.md](05-security-analysis.md).
+
+---
+
+<div align="center">
+
+◀ Prev [02 · zkTLS & TLSNotary](02-zktls-tlsnotary.md) · 🏠 [Docs home](../README.md) · Next ▶ [04 · Protocol design](04-protocol-design.md)
+
+</div>

@@ -1,8 +1,13 @@
 # 协议与系统设计 ⭐
 
-> **本篇定位**：协议与系统设计主篇，含两大创新。读懂这一篇就读懂了论文工作。
-> **读者**：深度轨。前置 [01-overview.md](01-overview.md)、[02-zktls-tlsnotary.md](02-zktls-tlsnotary.md)；配套 [reference/contracts.md](../reference/contracts.md)、[reference/code-map.md](../reference/code-map.md)。
-> 论文来源：ch4.1–4.6。事实以源码为准。
+> [!NOTE]
+> **本篇导读**
+> - **定位**：协议与系统设计主篇，含两大创新。读懂这一篇就读懂了论文工作。
+> - **读者**：深度轨。
+> - **前置/配套**：[01-overview.md](01-overview.md)、[02-zktls-tlsnotary.md](02-zktls-tlsnotary.md)；[reference/contracts.md](../reference/contracts.md)、[reference/code-map.md](../reference/code-map.md)。
+> - **论文来源**：ch4.1–4.6。事实以源码为准。
+
+**目录**：[分层架构](#1-分层架构与组件) · [双协议镜像](#2-crypto--fiat-双协议镜像) · [五合约](#3-链上合约层五合约) · [订单状态机](#4-订单状态机) · [链下证明层](#5-链下证明层) · [创新①订单绑定](#6-创新选择性披露规范与订单绑定摘要) · [平台验证器](#7-平台验证器) · [风险管理](#8-风险管理) · [合规与-Webhook](#9-合规字段与-webhook)
 
 ---
 
@@ -41,12 +46,14 @@
 
 五个核心合约 + 各平台验证器，托管合约为唯一写入入口（论文 ch4.2.1）：
 
-```
-用户 ──→ C2CEscrow（唯一写入入口）──→ TLSNVerifier ──注册表──→ platforms/*Verifier
-              │                          
-              ├──→ C2CRiskManager（信誉/保证金率）
-              ├──→ C2CBondVault（保证金托管/结算）
-              └──(只读)──→ C2CAdmin（资产/商家/汇率/白名单）
+```mermaid
+flowchart LR
+    U["用户"] --> E["C2CEscrow<br/>唯一写入入口"]
+    E --> V["TLSNVerifier"]
+    V -->|注册表| P["platforms/*Verifier<br/>支付宝 / Wise"]
+    E --> R["C2CRiskManager<br/>信誉 / 保证金率"]
+    E --> B["C2CBondVault<br/>保证金托管 / 结算"]
+    E -.只读.-> A["C2CAdmin<br/>资产 / 商家 / 汇率 / 白名单"]
 ```
 
 合约接口、事件、权限速查见 [contracts.md](../reference/contracts.md)。「单写入入口 + 只读配置中心 + 注册表分发」结构在模块化的同时满足 EVM 24.5 KB 合约大小限制。
@@ -57,19 +64,18 @@
 
 有限状态自动机（论文 ch4.2.5、式 eq:ch4-order-fsm）：
 
-```
-            placeOrder(CRYPTO)              payOrderByPlatform(证明通过)
-   ●─────────────────────────→ PENDING ─────────────────────────────→ COMPLETED ●
-                                  │
-                                  │ 超时(>deadline) sweepExpired*(任何人)
-                                  ↓
-                               EXPIRED ●
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: placeOrder(CRYPTO)
+    PENDING --> COMPLETED: payOrderByPlatform(证明通过)
+    PENDING --> EXPIRED: 超时(>deadline) sweepExpired*(任何人)
 
-            placeOrder(FIAT)               receiveCryptoWithPlatformPayment(证明通过)
-   ●─────────────────────────→ WAITING ─────────────────────────────→ COMPLETED ●
-                                  │ 超时
-                                  ↓
-                               EXPIRED ●
+    [*] --> WAITING: placeOrder(FIAT)
+    WAITING --> COMPLETED: receiveCryptoWithPlatformPayment(证明通过)
+    WAITING --> EXPIRED: 超时
+
+    COMPLETED --> [*]
+    EXPIRED --> [*]
 ```
 
 - `Q = {PENDING, WAITING, COMPLETED, EXPIRED}`，终态 `F = {COMPLETED, EXPIRED}`（[C2CTypes.sol:13-18](../../../tlsn-extension/packages/contracts/contracts/C2CTypes.sol#L13-L18)）。
@@ -77,6 +83,7 @@
 - 四条结构不变式：I₁ 资金守恒、I₂ 单活跃订单、I₃ 终态不可逆、I₄ 保证金绑定（论文 ch4.2.5）。
 - **超时清理 permissionless**：任何人可调 `sweepExpired*`（[:889-908](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L889-L908)），链下 [keeper](../../../tlsn-extension/packages/keeper/) 仅为便利角色，不掌握特权。
 
+> [!NOTE]
 > 状态名以买方视角命名：`PENDING`=买方待举证，`WAITING`=买方等商家举证。
 
 ---
@@ -118,7 +125,8 @@ H_bind = keccak256(
 
 `H_bind` 在链下作为 sessionData 传入，被 VS 签名摘要覆盖；链上以相同参数重建并比对（[`_requireOrderBinding`:423-425](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L423-L425)）。**任何参数篡改 → 重建的 H_bind 不符 → 签名恢复地址不在白名单 → 拒绝**。这从根本上消除「把合法证明移植到另一订单」的重放空间，无需额外时序约束。
 
-> 💡 15 个字段里，4 个账户哈希（商家与买方收付款方各 name+id）直接平铺进绑定，把收付款账户身份一并锁定；`rateVersion` 把成交汇率版本也纳入绑定——用新汇率版本对旧订单生成的证明会因 H_bind 不符被拒（汇率快照测试 `RATE-07` 验证）。
+> [!TIP]
+> 15 个字段里，4 个账户哈希（商家与买方收付款方各 name+id）直接平铺进绑定，把收付款账户身份一并锁定；`rateVersion` 把成交汇率版本也纳入绑定——用新汇率版本对旧订单生成的证明会因 H_bind 不符被拒（汇率快照测试 `RATE-07` 验证）。
 
 另有 `orderKey`（保证金隔离键）= 6 字段（[`_orderKey`:431-440](../../../tlsn-extension/packages/contracts/contracts/C2CEscrow.sol#L431-L440)）：`keccak256(escrow, chainId, merchant, productId, assetType, orderId)`。
 
@@ -130,7 +138,8 @@ H_bind = keccak256(
 
 **账户身份核验在链下 VS 完成**（论文 ch4.4.2）：VS 在签名前从响应报文提取收款方账户标识，与商家链上预注册的账户哈希**链下比对**；通过后才签名。TLSNProof 结构体不含账户明文，VS 签名的存在性即证明账户核验已过。Wise 的 contacts 证明在双证明流程中同样须通过密码学核验且 serverName 受信，其账户内容由 VS 链下核验。
 
-> 💡 **设计意图**：链上平台验证器不做账户比对，账户匹配设计在链下——当前无法在不泄露隐私的前提下于链上验证身份（对整个协议直接套 zk 会显著增加时延与手续费，对各方不利），故采用「链下 accountCheck + 验证器签名」的务实方案；链上的账户校验入口预留给未来完全去中心化阶段（zkTLS 性能达标后可平滑迁移上链）。
+> [!IMPORTANT]
+> **设计意图**：链上平台验证器不做账户比对，账户匹配设计在链下——当前无法在不泄露隐私的前提下于链上验证身份（对整个协议直接套 zk 会显著增加时延与手续费，对各方不利），故采用「链下 accountCheck + 验证器签名」的务实方案；链上的账户校验入口预留给未来完全去中心化阶段（zkTLS 性能达标后可平滑迁移上链）。
 
 **paramsData = 4 字段**：`(fiatAmountX1000, targetCurrency, orderDeadline, orderCreationTime)`，支付时间须落在 `[创建, 截止]` 窗口内，防止旧/过期转账被复用（[IPlatformVerifier.sol:10-18](../../../tlsn-extension/packages/contracts/contracts/interfaces/IPlatformVerifier.sol#L10-L18)）。
 
@@ -159,4 +168,13 @@ H_bind = keccak256(
 
 ---
 
+> [!TIP]
 > 安全目标如何由这些机制保障，见 [05-security-analysis.md](05-security-analysis.md)；实测性能见 [06-evaluation.md](06-evaluation.md)；密码学原理见 [02-zktls-tlsnotary.md](02-zktls-tlsnotary.md)。
+
+---
+
+<div align="center">
+
+◀ 上一篇 [03 · 威胁模型](03-threat-model.md) · 🏠 [文档导航](../README.md) · 下一篇 ▶ [05 · 安全分析](05-security-analysis.md)
+
+</div>

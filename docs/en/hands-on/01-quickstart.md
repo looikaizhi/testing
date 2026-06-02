@@ -1,10 +1,13 @@
 # Quickstart: Run the Minimal Local Loop
 
-> **Purpose**: bring up a local chain + contracts + verifier server + extension + dApp on your machine, with zero real payment accounts.
-> **Audience**: hands-on track.
-> **Command sources**: [`tlsn-extension/README.md`](../../../tlsn-extension/README.md), [`packages/contracts/scripts/deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts), the various `package.json`s.
+> [!NOTE]
+> **Reading guide**
+> - **Purpose**: bring up a local chain + contracts + verifier server + extension + dApp on your machine, with zero real payment accounts.
+> - **Audience**: hands-on track.
+> - **Command sources**: [`tlsn-extension/README.md`](../../../tlsn-extension/README.md), [`packages/contracts/scripts/deploy-web.ts`](../../../tlsn-extension/packages/contracts/scripts/deploy-web.ts), the various `package.json`s.
 
-> ⚠️ **Verification status of this page (stated honestly)**:
+> [!WARNING]
+> **Verification status of this page (stated honestly)**
 > - ✅ **Actually run & verified**: the `hardhat test` contract suite (WSL, 2026-06-02) — **336 passing / 0 failing**. Toolchain: Node v24.10.0 (via nvm) in WSL, cargo 1.95 (nightly).
 > - ⏳ **Commands sourced from verified scripts**: the full deploy + verifier + extension + web end-to-end startup was not run step-by-step in this pass (it needs a Rust build + loading the extension in a browser); the commands are taken from the scripts and the official README above, with ports/artifacts cross-checked against the source. On first run, follow the actual output.
 
@@ -92,7 +95,8 @@ npm run dev          # auto-builds deps + webpack-dev-server (port 3000), output
 
 Load in Chrome: `chrome://extensions/` → enable "Developer mode" → "Load unpacked" → select `packages/extension/build/`.
 
-> ⚠️ The extension version must match the notary/verifier version (see [03-troubleshooting.md](03-troubleshooting.md)).
+> [!WARNING]
+> The extension version must match the notary/verifier version (see [03-troubleshooting.md](03-troubleshooting.md)).
 
 ## 6. Start the C2C dApp
 
@@ -121,4 +125,13 @@ A path you can verify without a real Alipay/Wise account:
 
 ---
 
+> [!TIP]
 > Can't get it running? See [03-troubleshooting.md](03-troubleshooting.md). For the full real exchange flow, see [02-demo-walkthrough.md](02-demo-walkthrough.md). To understand what each step does, see [deep-dive/01-overview.md](../deep-dive/01-overview.md).
+
+---
+
+<div align="center">
+
+🏠 [Docs home](../README.md) · Next ▶ [02 · Demo walkthrough](02-demo-walkthrough.md)
+
+</div>

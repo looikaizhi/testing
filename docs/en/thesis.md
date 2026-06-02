@@ -19,6 +19,7 @@ This documentation is the companion open-source implementation of the master's t
 
 **Keywords**: zkTLS; semi-decentralized protocol; C2C asset exchange; off-chain payment proof; smart contract escrow
 
+> [!NOTE]
 > Source: thesis template `main.tex:31-134`, `chapters/abstract.tex`.
 
 ---
@@ -33,6 +34,7 @@ Two key contributions: ① an order-binding digest cryptographically binds the o
 
 Prototype results: the on-chain cost of one complete exchange on Arbitrum One is about \$0.13; end-to-end latency is 5.94 s (Alipay) / 9.74 s (Wise) in the ideal environment, and 17.44 s / 24.02 s in the broadband environment.
 
+> [!TIP]
 > For the full Chinese and English abstract, see `chapters/abstract.tex`. The code implementation realizes the thesis mechanisms more precisely; for details, follow this documentation and the source.
 
 ---
@@ -57,4 +59,13 @@ See the [mapping table in the English README](README.md#thesis-chapter--document
 }
 ```
 
-> Note: the thesis PDF (`main.pdf`) and LaTeX source live in the thesis-template directory (outside this repo) and are not distributed with this open-source repository.
+> [!NOTE]
+> The thesis PDF (`main.pdf`) and LaTeX source live in the thesis-template directory (outside this repo) and are not distributed with this open-source repository.
+
+---
+
+<div align="center">
+
+🏠 [Docs home](README.md) · 🧠 [Deep-dive overview](deep-dive/01-overview.md) · 🙏 [Attribution & license](ATTRIBUTION.md)
+
+</div>
